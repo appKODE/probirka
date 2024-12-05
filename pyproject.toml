@@ -1,51 +1,47 @@
-[tool.poetry]
+[project]
 name = "probirka"
-version = "0.1.0"
-description = "Tool for getting environment variables and checking connections to databases"
-authors = ["KODE <kode@kode.com>"]
+version = "0.0.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = []
+#license = "GPL-3.0"
+#authors = [
+#  { name = "Aleksandr Shpak", email = "shpaker@gmail.com" },
+#]
+classifiers = [
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Development Status :: 5 - Production/Stable",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.8.1,<4.0.0"
-
-[tool.poetry.group.dev.dependencies]
-poetry = "~1.8"
-poetry-plugin-sort = "^0.2"
-pre-commit = "^3.5"
-aiohttp = "*"
-fastapi = "*"
-
-[tool.poetry.group.linters.dependencies]
-black = "^24.3"
-isort = "^5.12"
-mypy = "^1.10"
-ruff = "^0.4"
-
-[tool.poetry.group.security.dependencies]
-bandit = "^1.7"
-safety = "^3.0"
-
-[tool.poetry.group.tests.dependencies]
-pytest = "^7.1"
-pytest-asyncio = "^0.20"
-pytest-cov = "^4.0"
-pytest-timeout = "^2.1"
-
-[tool.poetry.group.examples.dependencies]
-uvicorn = "^0.30.1"
+[project.urls]
+Repository = "https://github.com/appKODE/probirka"
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.pytest.ini_options]
-minversion = "6.0"
-testpaths = "tests"
-filterwarnings = [
-    "ignore::DeprecationWarning",
-    "ignore::UserWarning"
+[dependency-groups]
+dev = [
+    "aiohttp>=3.10.11",
+    "bandit>=1.7.10",
+    "fastapi>=0.115.6",
+    "mypy>=1.13.0",
+    "pre-commit>=3.5.0",
+    "pytest>=8.3.4",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=5.0.0",
+    "pytest-timeout>=2.3.1",
+    "ruff>=0.8.1",
+    "safety>=3.2.11",
 ]
-addopts = "--cache-clear --color=yes -vv"
-asyncio_mode = "auto"
 
 [tool.black]
 line-length = 120
@@ -79,15 +75,6 @@ exclude = [
     'venv/',
 ]
 
-[tool.isort]
-line_length = 120
-force_grid_wrap = 0
-multi_line_output = 3
-use_parentheses = true
-include_trailing_comma = true
-sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
-lines_between_types = 1
-
 [tool.ruff]
 target-version = "py38"
 line-length = 120
@@ -95,10 +82,7 @@ exclude = [
   ".venv",
 ]
 lint.ignore = [
-  "PLR0913",  # Too many arguments to function call
-  "RUF001",   # Docstring contains ambiguous chars
-  "RUF002",   # Docstring contains ambiguous chars
-  "RUF003",   # Docstring contains ambiguous chars
+  "PLR0913", # Too many arguments to function call
 ]
 lint.flake8-tidy-imports.ban-relative-imports = "all"
 lint.mccabe.max-complexity = 20
@@ -128,7 +112,7 @@ lint.select = [
   # "EM", # flake8-errmsg
   # "EXE", # flake8-executable
   # "FA", # flake8-future-annotations
-  "ISC", # flake8-implicit-str-concat
+#  "ISC", # flake8-implicit-str-concat
   # "ICN", # flake8-import-conventions
   "G", # flake8-logging-format
   "INP", # flake8-no-pep420
@@ -162,3 +146,7 @@ lint.select = [
   # "LOG", # flake8-logging
   "RUF", # Ruff-specific rules
 ]
+
+[tool.ruff.format]
+quote-style = "single"
+docstring-code-format = true

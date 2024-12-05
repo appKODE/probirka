@@ -1,7 +1,7 @@
 from asyncio import gather, wait_for
 from collections import defaultdict
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Literal, Optional, Sequence, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Union
 
 from probirka._probes import CallableProbe, Probe
 from probirka._results import HealthCheckResult, ProbeResult

@@ -1,6 +1,8 @@
+import pytest
 from probirka import Probirka
 
 
+@pytest.mark.asyncio
 async def test_decorator() -> None:
     checks = Probirka()
     results = await checks.run()
@@ -14,6 +16,7 @@ async def test_decorator() -> None:
     assert results.checks
 
 
+@pytest.mark.asyncio
 async def test_optional_probe() -> None:
     checks = Probirka()
 
