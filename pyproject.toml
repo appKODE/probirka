@@ -1,0 +1,153 @@
+[project]
+name = "probirka"
+version = "0.0.0"
+description = "Python 3 library to write simple asynchronous health checks (probes)"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = []
+license = "MIT"
+authors = [
+  { name = "KODE", email = "slurm@kode.ru" },
+]
+keywords = ["monitoring", "health-check", "probes"]
+classifiers = [
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Development Status :: 5 - Production/Stable",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+
+[project.urls]
+Repository = "https://github.com/appKODE/probirka"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+  "aiohttp>=3.10.11",
+  "bandit>=1.7.10",
+  "fastapi>=0.115.6",
+  "mypy>=1.13.0",
+  "pre-commit>=3.5.0",
+  "pytest>=8.3.4",
+  "pytest-asyncio>=0.24.0",
+  "pytest-cov>=5.0.0",
+  "pytest-timeout>=2.3.1",
+  "ruff>=0.8.1",
+  "safety>=3.2.11",
+]
+
+[tool.black]
+line-length = 120
+skip-string-normalization = true
+target-version = ['py38']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.mypy_cache
+  | \.pytest_cache
+  | \.venv
+  | \.vscode
+  | \.idea
+)
+'''
+
+[tool.mypy]
+python_version = 3.8
+ignore_missing_imports = true
+follow_imports = "silent"
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+strict_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+no_implicit_reexport = true
+exclude = [
+  '.venv/',
+  'venv/',
+]
+
+[tool.ruff]
+target-version = "py38"
+line-length = 120
+exclude = [
+  ".venv",
+]
+lint.ignore = [
+  "PLR0913", # Too many arguments to function call
+]
+lint.flake8-tidy-imports.ban-relative-imports = "all"
+lint.mccabe.max-complexity = 20
+lint.select = [
+  "F", # Pyflakes
+  # "E/W", # pycodestyle
+  "C90", # mccabe
+  # "I", # isort
+  # "N", # pep8-naming
+  # "D", # pydocstyle
+  "UP", # pyupgrade
+  "YTT", # flake8-2020
+  # "ANN", # flake8-annotations
+  # "ASYNC", # flake8-async
+  # "TRIO", # flake8-trio
+  # "S", # flake8-bandit
+  # "BLE", # flake8-blind-except
+  # "FBT", # flake8-boolean-trap
+  "B", # flake8-bugbear
+  # "A", # flake8-builtins
+  # "COM", # flake8-commas
+  # "CPY", # flake8-copyright
+  "C4", # flake8-comprehensions
+  # "DTZ", # flake8-datetimez
+  "T10", # flake8-debugger
+  # "DJ", # flake8-django
+  # "EM", # flake8-errmsg
+  # "EXE", # flake8-executable
+  # "FA", # flake8-future-annotations
+  #  "ISC", # flake8-implicit-str-concat
+  # "ICN", # flake8-import-conventions
+  "G", # flake8-logging-format
+  "INP", # flake8-no-pep420
+  # "PIE", # flake8-pie
+  "T20", # flake8-print
+  # "PYI", # flake8-pyi
+  # "PT", # flake8-pytest-style
+  # "Q", # flake8-quotes
+  "RSE", # flake8-raise
+  "RET", # flake8-return
+  "SLF", # flake8-self
+  # "SLOT", # flake8-slots
+  "SIM", # flake8-simplify
+  "TID", # flake8-tidy-imports
+  # "TCH", # flake8-type-checking
+  # "INT", # flake8-gettext
+  # "ARG", # flake8-unused-arguments
+  "PTH", # flake8-use-pathlib
+  # "TD", # flake8-todos
+  # "FIX", # flake8-fixme
+  "ERA", # eradicate
+  # "PD", # pandas-vet
+  # "PGH", # pygrep-hooks
+  "PL", # Pylint
+  # "TRY", # tryceratops
+  # "FLY", # flynt
+  # "NPY", # NumPy-specific rules
+  # "AIR", # Airflow
+  # "PERF", # Perflint
+  # "FURB", # refurb
+  # "LOG", # flake8-logging
+  "RUF", # Ruff-specific rules
+]
+
+[tool.ruff.format]
+quote-style = "single"
+docstring-code-format = true
