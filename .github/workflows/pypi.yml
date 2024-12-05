@@ -1,5 +1,5 @@
 ---
-name: pypi
+name: 👷🏼 pypi
 
 on:
   release:

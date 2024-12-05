@@ -1,14 +1,15 @@
 [project]
 name = "probirka"
 version = "0.0.0"
-description = "Add your description here"
+description = "Python 3 library to write simple asynchronous health checks (probes)"
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = []
-#license = "GPL-3.0"
-#authors = [
-#  { name = "Aleksandr Shpak", email = "shpaker@gmail.com" },
-#]
+license = "MIT"
+authors = [
+  { name = "KODE", email = "slurm@kode.ru" },
+]
+keywords = ["monitoring", "health-check", "probes"]
 classifiers = [
   "Topic :: Software Development :: Libraries :: Python Modules",
   "Development Status :: 5 - Production/Stable",
@@ -30,17 +31,17 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
-    "aiohttp>=3.10.11",
-    "bandit>=1.7.10",
-    "fastapi>=0.115.6",
-    "mypy>=1.13.0",
-    "pre-commit>=3.5.0",
-    "pytest>=8.3.4",
-    "pytest-asyncio>=0.24.0",
-    "pytest-cov>=5.0.0",
-    "pytest-timeout>=2.3.1",
-    "ruff>=0.8.1",
-    "safety>=3.2.11",
+  "aiohttp>=3.10.11",
+  "bandit>=1.7.10",
+  "fastapi>=0.115.6",
+  "mypy>=1.13.0",
+  "pre-commit>=3.5.0",
+  "pytest>=8.3.4",
+  "pytest-asyncio>=0.24.0",
+  "pytest-cov>=5.0.0",
+  "pytest-timeout>=2.3.1",
+  "ruff>=0.8.1",
+  "safety>=3.2.11",
 ]
 
 [tool.black]
@@ -71,8 +72,8 @@ warn_redundant_casts = true
 warn_unused_ignores = true
 no_implicit_reexport = true
 exclude = [
-    '.venv/',
-    'venv/',
+  '.venv/',
+  'venv/',
 ]
 
 [tool.ruff]
@@ -112,7 +113,7 @@ lint.select = [
   # "EM", # flake8-errmsg
   # "EXE", # flake8-executable
   # "FA", # flake8-future-annotations
-#  "ISC", # flake8-implicit-str-concat
+  #  "ISC", # flake8-implicit-str-concat
   # "ICN", # flake8-import-conventions
   "G", # flake8-logging-format
   "INP", # flake8-no-pep420
