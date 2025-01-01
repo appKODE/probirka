@@ -7,10 +7,11 @@ from probirka._results import HealthCheckResult, ProbeResult
 __title__ = 'probirka'
 __version__ = '0.0.0'
 __url__ = 'https://github.com/appKODE/probirka'
-__author__ = ''
-__author_email__ = ''
-__license__ = ''
-
+__author__ = 'KODE'
+__author_email__ = 'slurm@kode.ru'
+__license__ = 'MIT'
+__description__ = 'A health check library for Python applications'
+__keywords__ = 'health check, monitoring, probes'
 __all__ = [
     'HealthCheckResult',
     # types
