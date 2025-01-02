@@ -81,8 +81,7 @@ You can integrate Probirka with FastAPI as follows:
 
 ```python
 from fastapi import FastAPI
-from probirka import Probirka
-from probirka._fastapi import make_fastapi_endpoint
+from probirka import Probirka, make_fastapi_endpoint
 
 app = FastAPI()
 
@@ -102,8 +101,7 @@ You can integrate Probirka with aiohttp as follows:
 
 ```python
 from aiohttp import web
-from probirka import Probirka
-from probirka._aiohttp import make_aiohttp_endpoint
+from probirka import Probirka, make_aiohttp_endpoint
 
 app = web.Application()
 
