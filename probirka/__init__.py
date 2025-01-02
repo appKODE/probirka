@@ -11,7 +11,6 @@ __author__ = 'KODE'
 __author_email__ = 'slurm@kode.ru'
 __license__ = 'MIT'
 __description__ = 'A health check library for Python applications'
-__keywords__ = 'health check, monitoring, probes'
 __all__ = [
     'HealthCheckResult',
     # types

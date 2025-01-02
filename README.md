@@ -10,6 +10,15 @@ Python 3 library to write simple asynchronous health checks (probes).
 
 Probirka is a Python library designed to facilitate the creation of simple asynchronous health checks, also known as probes. It allows you to define custom probes to monitor the health of various services and components in your application.
 
+## Features
+
+- Simple API for defining asynchronous health checks
+- Support for custom probes
+- Integration with FastAPI and aiohttp
+- Ability to add custom information to health check results
+- Grouping of probes for selective execution
+- Timeout support for probes
+
 ## Installation
 
 Install Probirka using pip:
@@ -36,10 +45,12 @@ class CacheProbe(Probe):
     async def check(self):
         # Simulate a cache check
         await asyncio.sleep(1)
-        return True
+        return False  # Simulate a failed check
 
 async def main():
     health_check = HealthCheck(probes=[DatabaseProbe(), CacheProbe()])
+    health_check.add_info("version", "1.0.0")
+    health_check.add_info("environment", "production")
     results = await health_check.run()
     print(results)
 
@@ -47,7 +58,22 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-This example defines two probes, `DatabaseProbe` and `CacheProbe`, and runs them as part of a health check.
+This example defines two probes, `DatabaseProbe` and `CacheProbe`, and runs them as part of a health check. The `CacheProbe` simulates a failed check. Additionally, it adds custom user data using the `add_info` method.
+
+Example output:
+
+```python
+HealthCheckResult(
+    ok=False,
+    info={'version': '1.0.0', 'environment': 'production'},
+    started_at=datetime.datetime(2023, 10, 10, 10, 0, 0),
+    total_elapsed=datetime.timedelta(seconds=1),
+    checks=[
+        ProbeResult(name='DatabaseProbe', ok=True, elapsed=datetime.timedelta(seconds=1)),
+        ProbeResult(name='CacheProbe', ok=False, elapsed=datetime.timedelta(seconds=1))
+    ]
+)
+```
 
 ## Integration with FastAPI
 
@@ -77,14 +103,14 @@ You can integrate Probirka with aiohttp as follows:
 ```python
 from aiohttp import web
 from probirka import Probirka
-
-async def aiohttp_handler(request):
-    probirka_instance = Probirka()
-    res = await probirka_instance.run()
-    return web.json_response(res)
+from probirka._aiohttp import make_aiohttp_endpoint
 
 app = web.Application()
-app.router.add_get('/run', aiohttp_handler)
+
+probirka_instance = Probirka()
+aiohttp_endpoint = make_aiohttp_endpoint(probirka_instance)
+
+app.router.add_get('/run', aiohttp_endpoint)
 
 if __name__ == '__main__':
     web.run_app(app)

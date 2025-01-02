@@ -66,7 +66,10 @@ class Probirka:
         self._required_probes.extend(probes)
 
     def add(
-        self, name: Optional[str] = None, timeout: Optional[int] = None, groups: Union[str, List[str]] = ''
+        self,
+        name: Optional[str] = None,
+        timeout: Optional[int] = None,
+        groups: Union[str, List[str]] = '',
     ) -> Callable:
         """
         Decorator to add a callable as a probe.
@@ -90,7 +93,11 @@ class Probirka:
 
         return _wrapper
 
-    async def _inner_run(self, with_groups: List[str], skip_required: bool) -> Sequence[ProbeResult]:
+    async def _inner_run(
+        self,
+        with_groups: List[str],
+        skip_required: bool,
+    ) -> Sequence[ProbeResult]:
         """
         Run the probes and gather the results.
 
@@ -107,7 +114,10 @@ class Probirka:
         return results
 
     async def run(
-        self, timeout: Optional[int] = None, with_groups: Union[str, List[str]] = '', skip_required: bool = False
+        self,
+        timeout: Optional[int] = None,
+        with_groups: Union[str, List[str]] = '',
+        skip_required: bool = False,
     ) -> HealthCheckResult:
         """
         Run the health check and return the result.
