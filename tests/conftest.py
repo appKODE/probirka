@@ -1,3 +1,7 @@
+import pytest
+
+pytest_plugins = ('pytest_asyncio',)
+
 from typing import Callable, Optional, Union
 from unittest.mock import MagicMock
 
