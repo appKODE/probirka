@@ -10,12 +10,14 @@ class ProbeResult:
     elapsed: timedelta
     name: str
     error: Optional[str]
+    info: Optional[Dict[str, Any]]
+    cached: Optional[bool]
 
 
 @dataclass(frozen=True)
 class HealthCheckResult:
     ok: bool
-    info: Dict[str, Any]
+    info: Optional[Dict[str, Any]]
     started_at: datetime
     total_elapsed: timedelta
     checks: Sequence[ProbeResult]
