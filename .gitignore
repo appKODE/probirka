@@ -1,3 +1,5 @@
+.DS_Store
+
 .python-version
 .idea/
 # Byte-compiled / optimized / DLL files
@@ -73,6 +75,7 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docs/build/
 
 # PyBuilder
 .pybuilder/

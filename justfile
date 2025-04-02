@@ -18,3 +18,6 @@ fix:
 
 tests:
     uv run pytest --cov=probirka --cov-report lcov:tests.lcov tests/
+
+doc:
+    cd docs && uv run sphinx-build -b html source build && cd ..

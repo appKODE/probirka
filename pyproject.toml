@@ -42,7 +42,9 @@ dev = [
   "pytest-cov>=5.0.0",
   "pytest-timeout>=2.3.1",
   "ruff>=0.8.1",
-  "safety>=3.2.11",
+  "sphinx>=7.1.2",
+  "sphinx-autodoc-typehints>=2.0.1",
+  "sphinx-rtd-theme>=3.0.2",
 ]
 
 [tool.black]
@@ -62,7 +64,7 @@ exclude = '''
 '''
 
 [tool.mypy]
-python_version = 3.8
+python_version = "3.8"
 ignore_missing_imports = true
 follow_imports = "silent"
 disallow_untyped_defs = true
