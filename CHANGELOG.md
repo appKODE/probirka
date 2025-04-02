@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.1] - 2024-04-02
+
+### Fixed
+- Fix incorrect cache status reporting
+- Fix empty info dict initialization
+- Fix cache expiration behavior
+- Rename HealthCheckResult to ProbirkaResult for consistency
+
 ## [0.4.0] - 2024-03-21
 
 ### Added

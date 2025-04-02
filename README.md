@@ -25,6 +25,8 @@ Here is a simple example of how to use Probirka to create health checks using de
 
 ```python
 import asyncio
+from dataclasses import asdict
+from pprint import pprint
 from probirka import Probirka
 
 # Create a Probirka instance
@@ -53,20 +55,90 @@ def check_external_service():
     return True
 
 async def main():
+    print("-"*64)
     # Run only required probes (without groups)
     basic_results = await probirka.run()
-    print("Basic check results:", basic_results)
-    
-    # Run required probes + cache group probes
-    cache_results = await probirka.run(with_groups=["cache"])
-    print("Cache check results:", cache_results)
-    
+    print("Basic check results:")
+    print()
+    pprint(asdict(basic_results))
+
+    print("-"*64)
+    # Run only cache group probes
+    cache_results = await probirka.run(with_groups="cache", skip_required=True)
+    print("Cache check results:")
+    print()
+    pprint(asdict(cache_results))
+
+    print("-"*64)
     # Run required probes + multiple groups
     full_results = await probirka.run(with_groups=["cache", "external"])
-    print("Full check results:", full_results)
+    print("Full check results:")
+    print()
+    pprint(asdict(full_results))
 
 if __name__ == "__main__":
     asyncio.run(main())
+```
+
+Output:
+
+```python
+----------------------------------------------------------------
+Basic check results:
+
+{'checks': [{'cached': None,
+             'elapsed': datetime.timedelta(seconds=1, microseconds=1430),
+             'error': None,
+             'info': None,
+             'name': 'database',
+             'ok': True,
+             'started_at': datetime.datetime(2025, 4, 2, 9, 41, 53, 417942)}],
+ 'elapsed': datetime.timedelta(seconds=1, microseconds=1601),
+ 'info': {'environment': 'production', 'version': '1.0.0'},
+ 'ok': True,
+ 'started_at': datetime.datetime(2025, 4, 2, 9, 41, 53, 417898)}
+----------------------------------------------------------------
+Cache check results:
+
+{'checks': [{'cached': None,
+             'elapsed': datetime.timedelta(seconds=1, microseconds=1468),
+             'error': None,
+             'info': None,
+             'name': 'check_cache',
+             'ok': False,
+             'started_at': datetime.datetime(2025, 4, 2, 9, 41, 54, 420261)}],
+ 'elapsed': datetime.timedelta(seconds=1, microseconds=1776),
+ 'info': {'environment': 'production', 'version': '1.0.0'},
+ 'ok': False,
+ 'started_at': datetime.datetime(2025, 4, 2, 9, 41, 54, 420133)}
+----------------------------------------------------------------
+Full check results:
+
+{'checks': [{'cached': None,
+             'elapsed': datetime.timedelta(seconds=1, microseconds=1570),
+             'error': None,
+             'info': None,
+             'name': 'database',
+             'ok': True,
+             'started_at': datetime.datetime(2025, 4, 2, 9, 41, 55, 423083)},
+            {'cached': None,
+             'elapsed': datetime.timedelta(seconds=1, microseconds=1597),
+             'error': None,
+             'info': None,
+             'name': 'check_cache',
+             'ok': False,
+             'started_at': datetime.datetime(2025, 4, 2, 9, 41, 55, 423173)},
+            {'cached': None,
+             'elapsed': datetime.timedelta(microseconds=25),
+             'error': None,
+             'info': None,
+             'name': 'check_external_service',
+             'ok': True,
+             'started_at': datetime.datetime(2025, 4, 2, 9, 41, 55, 423245)}],
+ 'elapsed': datetime.timedelta(seconds=1, microseconds=2136),
+ 'info': {'environment': 'production', 'version': '1.0.0'},
+ 'ok': False,
+ 'started_at': datetime.datetime(2025, 4, 2, 9, 41, 55, 422905)}
 ```
 
 Alternatively, you can create custom probes by inheriting from the `ProbeBase` class:
