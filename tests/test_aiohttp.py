@@ -8,7 +8,7 @@ from aiohttp.test_utils import TestClient, TestServer
 
 from probirka import Probirka, ProbeBase
 from probirka._aiohttp import make_aiohttp_endpoint
-from probirka._results import HealthCheckResult, ProbeResult
+from probirka._results import ProbirkaResult, ProbeResult
 
 
 class SuccessProbe(ProbeBase):

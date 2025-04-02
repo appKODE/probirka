@@ -3,21 +3,21 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, Optional, Sequence
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, order=True)
 class ProbeResult:
+    name: str
+    ok: bool
+    cached: Optional[bool]
+    started_at: datetime
+    elapsed: timedelta
+    info: Optional[Dict[str, Any]]
+    error: Optional[str]
+
+
+@dataclass(frozen=True, order=True)
+class ProbirkaResult:
     ok: bool
     started_at: datetime
     elapsed: timedelta
-    name: str
-    error: Optional[str]
     info: Optional[Dict[str, Any]]
-    cached: Optional[bool]
-
-
-@dataclass(frozen=True)
-class HealthCheckResult:
-    ok: bool
-    info: Optional[Dict[str, Any]]
-    started_at: datetime
-    total_elapsed: timedelta
     checks: Sequence[ProbeResult]

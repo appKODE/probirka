@@ -92,8 +92,9 @@ class ProbeBase:
         :return: The result of the check.
         """
         now = datetime.now()
+        use_cache = bool(self._success_ttl or self._failed_ttl)
 
-        if self._last_result is not None:
+        if self._last_result:
             last_check_time = self._last_result.started_at + self._last_result.elapsed
             ttl = self._success_ttl if self._last_result.ok else self._failed_ttl
             if ttl is not None:
@@ -105,7 +106,7 @@ class ProbeBase:
                         elapsed=self._last_result.elapsed,
                         name=self._last_result.name,
                         error=self._last_result.error,
-                        info=self._last_result.info or {},
+                        info=self._last_result.info,
                         cached=bool(self._success_ttl is not None or self._failed_ttl is not None),
                     )
 
@@ -129,11 +130,11 @@ class ProbeBase:
             elapsed=datetime.now() - started_at,
             name=self._name,
             error=error,
-            info=self._info or {},
-            cached=False,
+            info=self._info,
+            cached=False if use_cache else None,
         )
 
-        if self._success_ttl is not None or self._failed_ttl is not None:
+        if use_cache:
             ttl = self._success_ttl if probe_result.ok else self._failed_ttl
             if ttl is not None:
                 self._last_result = probe_result

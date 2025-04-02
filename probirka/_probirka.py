@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from typing import Any, Callable, Dict, List, Optional, Sequence, Union
 
 from probirka._probes import CallableProbe, Probe
-from probirka._results import HealthCheckResult, ProbeResult
+from probirka._results import ProbirkaResult, ProbeResult
 
 
 class Probirka:
@@ -133,7 +133,7 @@ class Probirka:
         timeout: Optional[int] = None,
         with_groups: Union[str, List[str]] = '',
         skip_required: bool = False,
-    ) -> HealthCheckResult:
+    ) -> ProbirkaResult:
         """
         Run health check and return results.
 
@@ -162,10 +162,10 @@ class Probirka:
             if result.ok is False:
                 ok = False
                 break
-        return HealthCheckResult(
+        return ProbirkaResult(
             ok=ok,
             info=self._info,
             started_at=started_at,
-            total_elapsed=datetime.now() - started_at,
+            elapsed=datetime.now() - started_at,
             checks=results,
         )

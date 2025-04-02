@@ -161,19 +161,27 @@ async def test_probe_caching() -> None:
     result2 = await probe.run_check()
     assert result1.ok is True
     assert result2.ok is True
-    assert result1.cached is False
-    assert result2.cached is False
+    assert result1.cached is None
+    assert result2.cached is None  # Когда кэширование отключено, cached всегда None
     assert probe._counter == 2
 
     # Тест с кэшированием успешного результата
     probe = TestProbe(success_ttl=1)
     result1 = await probe.run_check()
+    await asyncio.sleep(0.1)  # Небольшая задержка, но меньше TTL
     result2 = await probe.run_check()
     assert result1.ok is True
     assert result2.ok is True
     assert result1.cached is False
     assert result2.cached is True
     assert probe._counter == 1
+
+    # Проверка истечения срока действия кэша
+    await asyncio.sleep(1.1)  # Ждем, пока истечет TTL
+    result3 = await probe.run_check()
+    assert result3.ok is True
+    assert result3.cached is False
+    assert probe._counter == 2
 
     # Тест с кэшированием неуспешного результата
     class FailingProbe(ProbeBase):
@@ -187,12 +195,20 @@ async def test_probe_caching() -> None:
 
     probe = FailingProbe(failed_ttl=1)
     result1 = await probe.run_check()
+    await asyncio.sleep(0.1)  # Небольшая задержка, но меньше TTL
     result2 = await probe.run_check()
     assert result1.ok is False
     assert result2.ok is False
     assert result1.cached is False
     assert result2.cached is True
     assert probe._counter == 1
+
+    # Проверка истечения срока действия кэша для неуспешного результата
+    await asyncio.sleep(1.1)  # Ждем, пока истечет TTL
+    result3 = await probe.run_check()
+    assert result3.ok is False
+    assert result3.cached is False
+    assert probe._counter == 2
 
 
 @pytest.mark.asyncio
@@ -245,4 +261,4 @@ async def test_probe_info_empty() -> None:
     result = await probe.run_check()
 
     assert result.ok is True
-    assert result.info == {}
+    assert result.info == None
