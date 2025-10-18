@@ -348,3 +348,21 @@ app.router.add_get('/health', aiohttp_endpoint)
 if __name__ == '__main__':
     web.run_app(app)
 ```
+
+### Django Integration
+
+```python
+# urls.py
+from django.urls import path
+from probirka import Probirka, make_django_view
+
+probirka_instance = Probirka()
+
+@probirka_instance.add(name="api")
+async def check_api():
+    return True
+
+urlpatterns = [
+    path("health/", make_django_view(probirka_instance)),
+]
+```

@@ -74,3 +74,26 @@ Here's an example of aiohttp integration:
        web.run_app(app, host="0.0.0.0", port=8000)
 
 After running, you can get the check results by sending a GET request to `/health`. The response will be in the same JSON format as for FastAPI. 
+
+Django
+------
+
+Here's an example of Django integration:
+
+.. code-block:: python
+
+    
+    from django.urls import path
+    from probirka import Probirka, make_django_view
+
+    probirka_instance = Probirka()
+
+    @probirka_instance.add(name="api")
+    async def check_api():
+        return True
+
+    urlpatterns = [
+        path("health/", make_django_view(probirka_instance)),
+    ]
+
+After running, you can get the check results by sending a GET request to `/health`. The response will be in the same JSON format as for FastAPI. 
