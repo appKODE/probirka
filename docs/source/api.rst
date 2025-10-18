@@ -37,3 +37,11 @@ AIOHTTP
    :members:
    :undoc-members:
    :show-inheritance: 
+
+Django
+~~~~~~
+
+.. automodule:: probirka._django
+   :members:
+   :undoc-members:
+   :show-inheritance: 

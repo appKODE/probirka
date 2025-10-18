@@ -28,3 +28,8 @@ with suppress(ImportError):
     from probirka._fastapi import make_fastapi_endpoint  # noqa
 
     __all__.append('make_fastapi_endpoint')
+
+with suppress(ImportError):
+    from probirka._django import make_django_view  # noqa
+
+    __all__.append('make_django_view')
