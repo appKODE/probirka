@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+- Per-probe `success_ttl=0` / `failed_ttl=0` now disables caching instead of falling back to the global TTL
+
 ## [0.6.0] - 2026-09-11
 
 ### Added

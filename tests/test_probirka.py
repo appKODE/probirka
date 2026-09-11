@@ -156,3 +156,20 @@ async def test_to_dict_is_json_compatible() -> None:
     assert isinstance(data['checks'][0]['elapsed'], float)
     assert data['checks'][0]['started_at'] == results.checks[0].started_at.isoformat()
     assert json.loads(json.dumps(data)) == data
+
+
+@pytest.mark.asyncio
+async def test_probe_ttl_zero_overrides_global_ttl() -> None:
+    checks = Probirka(success_ttl=100, failed_ttl=100)
+    counter = 0
+
+    @checks.add(success_ttl=0, failed_ttl=0)
+    def _check() -> bool:
+        nonlocal counter
+        counter += 1
+        return True
+
+    await checks.run()
+    results = await checks.run()
+    assert counter == 2
+    assert results.checks[0].cached is not True
