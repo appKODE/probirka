@@ -227,7 +227,24 @@ You can set timeouts for individual checks:
            await asyncio.sleep(2)  # This will cause a timeout
            return True
 
-   probe = SlowProbe(timeout=1.0)  # 1 second timeout
+   probe = SlowProbe(timeout=1)  # 1 second timeout
+
+When a probe times out, ``ok`` is ``False`` and ``error`` is set to
+``TimeoutError: probe timed out after 1s``. Synchronous probes are executed in the
+event loop's default executor, so they do not block the loop and the timeout applies
+to them as well; the worker thread keeps running until the function returns, only the
+wait is cancelled.
+
+You can also set an overall timeout for ``Probirka.run()``. It never raises: probes
+that did not finish in time are reported as failed with a ``TimeoutError`` message,
+finished probes keep their real results, and the whole ``ProbirkaResult`` gets
+``ok=False`` with ``error`` set:
+
+.. code-block:: python
+
+   results = await probirka.run(timeout=5)
+   if not results.ok:
+       print(results.error)  # "TimeoutError: probirka run timed out after 5s" when the timeout was hit
 
 Caching Results
 ---------------

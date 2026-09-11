@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.5.0] - 2026-09-11
+
+### Added
+- `ProbirkaResult.error` with the reason when the overall timeout is hit
+- `Probe.name` property
+- Python 3.14 support
+- `py.typed` marker
+
+### Fixed
+- `Probirka.run()` no longer raises `TimeoutError` on the overall timeout: unfinished probes are reported as failed, finished ones keep their results, and the response gets `ok=False`
+- Probe errors include the exception type; timeouts are reported explicitly instead of an empty string
+- Synchronous probes run in the default executor, so they do not block the event loop and respect `timeout`
+- `ProbeBase` is abstract: a subclass without `_check` fails at instantiation instead of silently reporting a failed check
+- `ProbeResult.ok` is always a `bool`
+- Unknown groups passed to `run()` are ignored instead of being registered as empty groups
+
 ## [0.4.1] - 2024-04-02
 
 ### Fixed

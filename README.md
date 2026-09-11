@@ -5,7 +5,7 @@ Python 3 library to write simple asynchronous health checks (probes).
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![PyPI](https://img.shields.io/pypi/v/probirka.svg)](https://pypi.python.org/pypi/probirka)
 [![PyPI](https://img.shields.io/pypi/dm/probirka.svg)](https://pypi.python.org/pypi/probirka)
-[![Coverage Status](https://coveralls.io/repos/github/appKODE/probirka/badge.svg?branch=polish-docs)](https://coveralls.io/github/appKODE/probirka?branch=polish-docs)
+[![Coverage Status](https://coveralls.io/repos/github/appKODE/probirka/badge.svg?branch=main)](https://coveralls.io/github/appKODE/probirka?branch=main)
 
 ## Overview
 
@@ -94,6 +94,7 @@ Basic check results:
              'ok': True,
              'started_at': datetime.datetime(2025, 4, 2, 9, 41, 53, 417942)}],
  'elapsed': datetime.timedelta(seconds=1, microseconds=1601),
+ 'error': None,
  'info': {'environment': 'production', 'version': '1.0.0'},
  'ok': True,
  'started_at': datetime.datetime(2025, 4, 2, 9, 41, 53, 417898)}
@@ -108,6 +109,7 @@ Cache check results:
              'ok': False,
              'started_at': datetime.datetime(2025, 4, 2, 9, 41, 54, 420261)}],
  'elapsed': datetime.timedelta(seconds=1, microseconds=1776),
+ 'error': None,
  'info': {'environment': 'production', 'version': '1.0.0'},
  'ok': False,
  'started_at': datetime.datetime(2025, 4, 2, 9, 41, 54, 420133)}
@@ -136,6 +138,7 @@ Full check results:
              'ok': True,
              'started_at': datetime.datetime(2025, 4, 2, 9, 41, 55, 423245)}],
  'elapsed': datetime.timedelta(seconds=1, microseconds=2136),
+ 'error': None,
  'info': {'environment': 'production', 'version': '1.0.0'},
  'ok': False,
  'started_at': datetime.datetime(2025, 4, 2, 9, 41, 55, 422905)}
@@ -160,7 +163,8 @@ class CacheProbe(ProbeBase):
         return False  # Simulate a failed check
 
 async def main():
-    probirka = Probirka(probes=[DatabaseProbe(), CacheProbe()])
+    probirka = Probirka()
+    probirka.add_probes(DatabaseProbe(), CacheProbe())
     probirka.add_info("version", "1.0.0")
     probirka.add_info("environment", "production")
     results = await probirka.run()
@@ -264,7 +268,17 @@ class SlowProbe(ProbeBase):
         await asyncio.sleep(2)  # This will timeout
         return True
 
-probe = SlowProbe(timeout=1.0)  # 1 second timeout
+probe = SlowProbe(timeout=1)  # 1 second timeout
+```
+
+When a probe times out, `ok` is `False` and `error` is set to `TimeoutError: probe timed out after 1s`. Synchronous probes are executed in the event loop's default executor, so they do not block the loop and the timeout applies to them as well; the worker thread keeps running until the function returns, only the wait is cancelled.
+
+You can also set an overall timeout for `Probirka.run()`. It never raises: probes that did not finish in time are reported as failed with a `TimeoutError` message, finished probes keep their real results, and the whole `ProbirkaResult` gets `ok=False` with `error` set:
+
+```python
+results = await probirka.run(timeout=5)
+if not results.ok:
+    print(results.error)  # "TimeoutError: probirka run timed out after 5s" when the timeout was hit
 ```
 
 ### Caching Results
@@ -320,7 +334,7 @@ async def check_api():
 
 # Create and add the endpoint
 fastapi_endpoint = make_fastapi_endpoint(probirka_instance)
-app.add_route("/health", fastapi_endpoint)
+app.add_api_route("/health", fastapi_endpoint)
 
 if __name__ == "__main__":
     import uvicorn

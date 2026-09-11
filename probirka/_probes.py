@@ -1,9 +1,23 @@
-from abc import abstractmethod
-from asyncio import iscoroutinefunction, wait_for
+from abc import ABC, abstractmethod
+from asyncio import TimeoutError as AsyncTimeoutError, get_running_loop, iscoroutinefunction, wait_for
 from datetime import datetime, timedelta
-from typing import Callable, Optional, Union, Dict, Any, Protocol
+from typing import Any, Callable, Dict, Optional, Protocol, Union
 
 from probirka._results import ProbeResult
+
+
+def format_error(exc: BaseException) -> str:
+    """
+    Format an exception for the ``error`` field of a result.
+
+    Always includes the exception type so that exceptions with an empty
+    message (``TimeoutError``, ``NotImplementedError``, ...) stay informative.
+
+    :param exc: The exception to format.
+    :return: ``'ExcType: message'`` or just ``'ExcType'`` when the message is empty.
+    """
+    message = str(exc)
+    return f'{type(exc).__name__}: {message}' if message else type(exc).__name__
 
 
 class Probe(Protocol):
@@ -12,14 +26,25 @@ class Probe(Protocol):
     """
 
     @property
-    def info(self) -> Optional[Dict[str, Any]]: ...
+    def name(self) -> str:
+        """Probe name used in results."""
+        ...
 
-    def add_info(self, name: str, value: Any) -> None: ...
+    @property
+    def info(self) -> Optional[Dict[str, Any]]:
+        """Metadata attached to the probe, ``None`` if nothing was added."""
+        ...
 
-    async def run_check(self) -> ProbeResult: ...
+    def add_info(self, name: str, value: Any) -> None:
+        """Attach a key/value pair to the probe result."""
+        ...
+
+    async def run_check(self) -> ProbeResult:
+        """Run the check and return its result; must not raise."""
+        ...
 
 
-class ProbeBase:
+class ProbeBase(ABC):
     """
     Base implementation of a probe.
     """
@@ -45,6 +70,17 @@ class ProbeBase:
         self._failed_ttl = timedelta(seconds=failed_ttl) if isinstance(failed_ttl, int) else failed_ttl
         self._last_result: Optional[ProbeResult] = None
         self._info: Optional[Dict[str, Any]] = None
+
+    @property
+    def name(
+        self,
+    ) -> str:
+        """
+        Get the name of the probe.
+
+        :return: The name of the probe.
+        """
+        return self._name
 
     def add_info(
         self,
@@ -107,25 +143,26 @@ class ProbeBase:
                         name=self._last_result.name,
                         error=self._last_result.error,
                         info=self._last_result.info,
-                        cached=bool(self._success_ttl is not None or self._failed_ttl is not None),
+                        cached=True,
                     )
 
         started_at = now
         error = None
-        task = self._check()
         try:
             result = await wait_for(
-                fut=task,
+                fut=self._check(),
                 timeout=self._timeout,
             )
-            if result is None:
-                result = True
+            ok = True if result is None else bool(result)
+        except AsyncTimeoutError:
+            ok = False
+            error = f'TimeoutError: probe timed out after {self._timeout}s'
         except Exception as exc:
-            result = False
-            error = str(exc)
+            ok = False
+            error = format_error(exc)
 
         probe_result = ProbeResult(
-            ok=False if result is None else result,
+            ok=ok,
             started_at=started_at,
             elapsed=datetime.now() - started_at,
             name=self._name,
@@ -145,6 +182,11 @@ class ProbeBase:
 class CallableProbe(ProbeBase):
     """
     A probe that wraps a callable function.
+
+    Coroutine functions are awaited directly. Plain functions are executed in the
+    event loop's default executor so they neither block the loop nor escape the
+    probe timeout. Note that on timeout the worker thread keeps running until the
+    function returns; only the wait is cancelled.
     """
 
     def __init__(
@@ -155,6 +197,15 @@ class CallableProbe(ProbeBase):
         success_ttl: Optional[Union[int, timedelta]] = None,
         failed_ttl: Optional[Union[int, timedelta]] = None,
     ) -> None:
+        """
+        Initialize the probe.
+
+        :param func: Sync or async callable returning ``True``/``None`` on success, ``False`` on failure.
+        :param name: The name of the probe. Defaults to ``func.__name__``.
+        :param timeout: The timeout for the probe.
+        :param success_ttl: Cache duration for successful results. If None, successful results are not cached.
+        :param failed_ttl: Cache duration for failed results. If None, failed results are not cached.
+        """
         self._func = func
         super().__init__(
             name=name or func.__name__,
@@ -173,4 +224,4 @@ class CallableProbe(ProbeBase):
         """
         if iscoroutinefunction(self._func):
             return await self._func()
-        return self._func()
+        return await get_running_loop().run_in_executor(None, self._func)

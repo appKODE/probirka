@@ -1,7 +1,7 @@
-from asyncio import gather, wait_for
+from asyncio import ensure_future, gather, wait
 from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import Any, Callable, Dict, List, Optional, Sequence, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from probirka._probes import CallableProbe, Probe
 from probirka._results import ProbirkaResult, ProbeResult
@@ -112,21 +112,52 @@ class Probirka:
         self,
         with_groups: List[str],
         skip_required: bool,
-    ) -> Sequence[ProbeResult]:
+        timeout: Optional[int],
+        started_at: datetime,
+    ) -> Tuple[List[ProbeResult], bool]:
         """
-        Run probes and gather results.
+        Run probes concurrently and gather results in registration order.
+
+        Probes that do not finish within ``timeout`` are cancelled and reported
+        as failed with a ``TimeoutError`` message, so partial results survive.
 
         :param with_groups: Groups to run. Required probes run unless skip_required=True
         :param skip_required: Skip probes without groups
-        :return: Sequence of probe results
+        :param timeout: Overall timeout in seconds, ``None`` to wait indefinitely
+        :param started_at: Start time of the whole run
+        :return: Probe results and whether the overall timeout was hit
         """
-        tasks = [] if skip_required else [probe.run_check() for probe in self._required_probes]
+        probes: List[Probe] = [] if skip_required else list(self._required_probes)
         for group in with_groups:
-            tasks += [probe.run_check() for probe in self._optional_probes[group]]
-        results = await gather(*tasks)
-        for coro in tasks:
-            coro.close()
-        return results
+            probes.extend(self._optional_probes.get(group, ()))
+        if not probes:
+            return [], False
+
+        tasks = [ensure_future(probe.run_check()) for probe in probes]
+        _, pending = await wait(tasks, timeout=timeout)
+        if pending:
+            for task in pending:
+                task.cancel()
+            await gather(*pending, return_exceptions=True)
+
+        timeout_error = f'TimeoutError: probirka run timed out after {timeout}s'
+        results: List[ProbeResult] = []
+        for probe, task in zip(probes, tasks):
+            if task in pending:
+                results.append(
+                    ProbeResult(
+                        name=probe.name,
+                        ok=False,
+                        cached=None,
+                        started_at=started_at,
+                        elapsed=datetime.now() - started_at,
+                        info=probe.info,
+                        error=timeout_error,
+                    )
+                )
+            else:
+                results.append(task.result())
+        return results, bool(pending)
 
     async def run(
         self,
@@ -137,35 +168,28 @@ class Probirka:
         """
         Run health check and return results.
 
+        The overall timeout never raises: probes that did not finish in time are
+        reported as failed and the whole result gets ``ok=False`` with ``error`` set.
+
         :param timeout: Overall timeout in seconds
         :param with_groups: Groups to run. Required probes run unless skip_required=True
         :param skip_required: Skip probes without groups
         :return: Health check result
         """
-        if with_groups and isinstance(with_groups, str):
-            with_groups = [with_groups]
+        if isinstance(with_groups, str):
+            with_groups = [with_groups] if with_groups else []
         started_at = datetime.now()
-        fut = self._inner_run(
-            with_groups=with_groups,  # type: ignore
+        results, timed_out = await self._inner_run(
+            with_groups=with_groups,
             skip_required=skip_required,
+            timeout=timeout or None,
+            started_at=started_at,
         )
-        results = (
-            await wait_for(
-                fut=fut,
-                timeout=timeout,
-            )
-            if timeout
-            else await fut
-        )
-        ok = True
-        for result in results:
-            if result.ok is False:
-                ok = False
-                break
         return ProbirkaResult(
-            ok=ok,
+            ok=not timed_out and all(result.ok for result in results),
             info=self._info,
             started_at=started_at,
             elapsed=datetime.now() - started_at,
             checks=results,
+            error=f'TimeoutError: probirka run timed out after {timeout}s' if timed_out else None,
         )

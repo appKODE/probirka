@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 from probirka import Probirka
 
@@ -79,3 +81,52 @@ async def test_probirka_caching() -> None:
     results = await checks2.run()
     assert results.checks[0].ok is True
     assert counter2 == 1
+
+
+@pytest.mark.asyncio
+async def test_run_timeout_returns_failed_result() -> None:
+    checks = Probirka()
+
+    @checks.add()
+    async def _fast() -> bool:
+        return True
+
+    @checks.add()
+    async def _slow() -> bool:
+        await asyncio.sleep(1)
+        return True
+
+    results = await checks.run(timeout=0.1)  # type: ignore[arg-type]
+
+    assert results.ok is False
+    assert results.error == 'TimeoutError: probirka run timed out after 0.1s'
+    assert [check.name for check in results.checks] == ['_fast', '_slow']
+    assert results.checks[0].ok is True
+    assert results.checks[0].error is None
+    assert results.checks[1].ok is False
+    assert results.checks[1].error == 'TimeoutError: probirka run timed out after 0.1s'
+    assert results.elapsed.total_seconds() < 0.5
+
+
+@pytest.mark.asyncio
+async def test_run_without_timeout_has_no_error() -> None:
+    checks = Probirka()
+
+    @checks.add()
+    async def _fast() -> bool:
+        return True
+
+    results = await checks.run(timeout=1)
+
+    assert results.ok is True
+    assert results.error is None
+
+
+@pytest.mark.asyncio
+async def test_unknown_group_is_ignored() -> None:
+    checks = Probirka()
+    results = await checks.run(with_groups='missing', skip_required=True)
+
+    assert results.ok is True
+    assert not results.checks
+    assert 'missing' not in checks._optional_probes

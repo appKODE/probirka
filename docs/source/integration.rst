@@ -21,7 +21,7 @@ Here's an example of FastAPI integration:
 
    # Create and add the endpoint
    fastapi_endpoint = make_fastapi_endpoint(probirka_instance)
-   app.add_route("/health", fastapi_endpoint)
+   app.add_api_route("/health", fastapi_endpoint)
 
    if __name__ == "__main__":
        import uvicorn
