@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.6.0] - 2026-09-11
 
 ### Added
 - `make_django_view` — Django (>= 4.2) async view integration
