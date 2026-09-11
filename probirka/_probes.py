@@ -26,14 +26,22 @@ class Probe(Protocol):
     """
 
     @property
-    def name(self) -> str: ...
+    def name(self) -> str:
+        """Probe name used in results."""
+        ...
 
     @property
-    def info(self) -> Optional[Dict[str, Any]]: ...
+    def info(self) -> Optional[Dict[str, Any]]:
+        """Metadata attached to the probe, ``None`` if nothing was added."""
+        ...
 
-    def add_info(self, name: str, value: Any) -> None: ...
+    def add_info(self, name: str, value: Any) -> None:
+        """Attach a key/value pair to the probe result."""
+        ...
 
-    async def run_check(self) -> ProbeResult: ...
+    async def run_check(self) -> ProbeResult:
+        """Run the check and return its result; must not raise."""
+        ...
 
 
 class ProbeBase(ABC):
@@ -189,6 +197,15 @@ class CallableProbe(ProbeBase):
         success_ttl: Optional[Union[int, timedelta]] = None,
         failed_ttl: Optional[Union[int, timedelta]] = None,
     ) -> None:
+        """
+        Initialize the probe.
+
+        :param func: Sync or async callable returning ``True``/``None`` on success, ``False`` on failure.
+        :param name: The name of the probe. Defaults to ``func.__name__``.
+        :param timeout: The timeout for the probe.
+        :param success_ttl: Cache duration for successful results. If None, successful results are not cached.
+        :param failed_ttl: Cache duration for failed results. If None, failed results are not cached.
+        """
         self._func = func
         super().__init__(
             name=name or func.__name__,
