@@ -21,3 +21,4 @@ class ProbirkaResult:
     elapsed: timedelta
     info: Optional[Dict[str, Any]]
     checks: Sequence[ProbeResult]
+    error: Optional[str] = None

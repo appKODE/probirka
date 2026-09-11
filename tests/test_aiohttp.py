@@ -1,3 +1,4 @@
+import asyncio
 import json
 from datetime import datetime, timedelta
 from typing import AsyncGenerator
@@ -19,6 +20,12 @@ class SuccessProbe(ProbeBase):
 class FailureProbe(ProbeBase):
     async def _check(self) -> bool:
         return False
+
+
+class SlowProbe(ProbeBase):
+    async def _check(self) -> bool:
+        await asyncio.sleep(1)
+        return True
 
 
 @pytest.fixture
@@ -142,3 +149,21 @@ async def test_with_custom_parameters(probirka: Probirka) -> None:
             assert response_data["ok"] is True
             # Проверяем, что запустился только один проб из группы group1
             assert len(response_data["checks"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_timeout_returns_error_code(probirka: Probirka) -> None:
+    app = web.Application()
+    endpoint = make_aiohttp_endpoint(probirka, timeout=0.1)  # type: ignore[arg-type]
+    app.router.add_get("/health", endpoint)
+    server = TestServer(app)
+    probirka.add_probes(SlowProbe())
+
+    async with TestClient(server) as client:
+        async with client.get("/health") as response:
+            assert response.status == 500
+            response_data = await response.json()
+            assert response_data["ok"] is False
+            assert response_data["error"] == "TimeoutError: probirka run timed out after 0.1s"
+            assert response_data["checks"][0]["ok"] is False
+            assert response_data["checks"][0]["error"] == "TimeoutError: probirka run timed out after 0.1s"

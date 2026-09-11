@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 from fastapi import FastAPI, status
 from fastapi.testclient import TestClient
@@ -14,6 +16,12 @@ class SuccessProbe(ProbeBase):
 class FailureProbe(ProbeBase):
     async def _check(self) -> bool:
         return False
+
+
+class SlowProbe(ProbeBase):
+    async def _check(self) -> bool:
+        await asyncio.sleep(1)
+        return True
 
 
 @pytest.fixture
@@ -130,3 +138,20 @@ def test_with_custom_parameters(probirka: Probirka) -> None:
     assert response_data["ok"] is True
     # Проверяем, что запустился только один проб из группы group1
     assert len(response_data["checks"]) == 1
+
+
+def test_timeout_returns_error_code(probirka: Probirka) -> None:
+    app = FastAPI()
+    endpoint = make_fastapi_endpoint(probirka, timeout=0.1)  # type: ignore[arg-type]
+    app.add_api_route("/health", endpoint)
+    client = TestClient(app)
+    probirka.add_probes(SlowProbe())
+
+    response = client.get("/health")
+
+    assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+    response_data = response.json()
+    assert response_data["ok"] is False
+    assert response_data["error"] == "TimeoutError: probirka run timed out after 0.1s"
+    assert response_data["checks"][0]["ok"] is False
+    assert response_data["checks"][0]["error"] == "TimeoutError: probirka run timed out after 0.1s"

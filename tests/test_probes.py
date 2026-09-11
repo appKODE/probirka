@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 
 import pytest
 import asyncio
+import time
 from datetime import datetime, timedelta
 from unittest.mock import AsyncMock, patch
 
@@ -62,14 +63,15 @@ class TestProbeBase:
     async def test_run_check_with_timeout(self) -> None:
         class SlowProbe(ProbeBase):
             async def _check(self) -> bool:
-                await asyncio.sleep(2)
+                await asyncio.sleep(0.5)
                 return True
 
-        probe = SlowProbe(timeout=1)
+        probe = SlowProbe(timeout=0.1)  # type: ignore[arg-type]
         result = await probe.run_check()
 
         assert result.ok is False
-        assert result.error is not None
+        assert result.error == "TimeoutError: probe timed out after 0.1s"
+        assert result.elapsed < timedelta(seconds=0.4)
 
     @pytest.mark.asyncio
     async def test_run_check_with_exception(self) -> None:
@@ -81,7 +83,39 @@ class TestProbeBase:
         result = await probe.run_check()
 
         assert result.ok is False
-        assert result.error == "Test error"
+        assert result.error == "ValueError: Test error"
+
+    @pytest.mark.asyncio
+    async def test_run_check_with_exception_without_message(self) -> None:
+        class FailingProbe(ProbeBase):
+            async def _check(self) -> bool:
+                raise RuntimeError
+
+        result = await FailingProbe().run_check()
+
+        assert result.ok is False
+        assert result.error == "RuntimeError"
+
+    @pytest.mark.asyncio
+    async def test_run_check_result_is_always_bool(self) -> None:
+        class TruthyProbe(ProbeBase):
+            async def _check(self) -> Any:
+                return "yes"
+
+        result = await TruthyProbe().run_check()
+
+        assert result.ok is True
+
+    def test_probe_without_check_is_abstract(self) -> None:
+        class IncompleteProbe(ProbeBase):
+            pass
+
+        with pytest.raises(TypeError):
+            IncompleteProbe()  # type: ignore[abstract]
+
+    def test_name_property(self) -> None:
+        assert self.ConcreteProbe().name == "ConcreteProbe"
+        assert self.ConcreteProbe(name="custom").name == "custom"
 
 
 class TestCallableProbe:
@@ -130,6 +164,40 @@ class TestCallableProbe:
         assert isinstance(result, ProbeResult)
         assert result.ok is True
         assert result.name == "test_func"
+
+    @pytest.mark.asyncio
+    async def test_sync_function_respects_timeout(self) -> None:
+        def test_func() -> bool:
+            time.sleep(0.5)
+            return True
+
+        probe = CallableProbe(test_func, timeout=0.1)  # type: ignore[arg-type]
+        started = time.monotonic()
+        result = await probe.run_check()
+
+        assert result.ok is False
+        assert result.error == "TimeoutError: probe timed out after 0.1s"
+        assert time.monotonic() - started < 0.4
+
+    @pytest.mark.asyncio
+    async def test_sync_function_does_not_block_event_loop(self) -> None:
+        def test_func() -> bool:
+            time.sleep(0.3)
+            return True
+
+        probe = CallableProbe(test_func)
+        ticks = 0
+
+        async def ticker() -> None:
+            nonlocal ticks
+            for _ in range(5):
+                await asyncio.sleep(0.05)
+                ticks += 1
+
+        result, _ = await asyncio.gather(probe.run_check(), ticker())
+
+        assert result.ok is True
+        assert ticks == 5
 
     @pytest.mark.asyncio
     async def test_run_check_with_async_function(self) -> None:
