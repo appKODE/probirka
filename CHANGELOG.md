@@ -5,6 +5,7 @@
 ### Fixed
 - `CallableProbe` awaits awaitables returned by plain callables (e.g. objects with `async def __call__`), which previously were reported as passed without running
 - Replaced deprecated `asyncio.iscoroutinefunction` with `inspect.iscoroutinefunction` (removal scheduled for Python 3.16)
+- Per-probe `success_ttl=0` / `failed_ttl=0` now disables caching instead of falling back to the global TTL
 
 ## [0.6.0] - 2026-09-11
 
