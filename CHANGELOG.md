@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+- `CallableProbe` awaits awaitables returned by plain callables (e.g. objects with `async def __call__`), which previously were reported as passed without running
+- Replaced deprecated `asyncio.iscoroutinefunction` with `inspect.iscoroutinefunction` (removal scheduled for Python 3.16)
+
 ## [0.6.0] - 2026-09-11
 
 ### Added

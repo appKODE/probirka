@@ -1,4 +1,4 @@
-from typing import Callable, Optional, Union, Any
+from typing import Any, Awaitable, Callable, Optional, Union
 from unittest.mock import MagicMock
 
 import pytest
@@ -330,3 +330,27 @@ async def test_probe_info_empty() -> None:
 
     assert result.ok is True
     assert result.info == None
+
+
+@pytest.mark.asyncio
+async def test_callable_probe_async_call_object() -> None:
+    class _AsyncCallable:
+        async def __call__(self) -> bool:
+            return False
+
+    probe = CallableProbe(_AsyncCallable(), name='async_call')
+    result = await probe.run_check()
+    assert result.ok is False
+
+
+@pytest.mark.asyncio
+async def test_callable_probe_sync_returning_awaitable() -> None:
+    async def _inner() -> bool:
+        return False
+
+    def _func() -> Awaitable[bool]:
+        return _inner()
+
+    probe = CallableProbe(_func)
+    result = await probe.run_check()
+    assert result.ok is False
