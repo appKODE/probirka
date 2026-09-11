@@ -89,7 +89,9 @@ class Probirka:
         :param timeout: Probe timeout in seconds
         :param groups: Groups for optional probes. Probes without groups are required.
         :param success_ttl: Cache duration for successful results. If None, uses the global success_ttl setting.
+            Pass ``0`` to disable caching of successful results for this probe.
         :param failed_ttl: Cache duration for failed results. If None, uses the global failed_ttl setting.
+            Pass ``0`` to disable caching of failed results for this probe.
         :return: Decorated function
         """
 
@@ -99,8 +101,8 @@ class Probirka:
                     func=func,
                     name=name,
                     timeout=timeout,
-                    success_ttl=success_ttl or self._success_ttl,
-                    failed_ttl=failed_ttl or self._failed_ttl,
+                    success_ttl=success_ttl if success_ttl is not None else self._success_ttl,
+                    failed_ttl=failed_ttl if failed_ttl is not None else self._failed_ttl,
                 ),
                 groups=groups,
             )
