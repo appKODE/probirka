@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.5.0] - 2026-09-11
 
 ### Added
 - `ProbirkaResult.error` with the reason when the overall timeout is hit
