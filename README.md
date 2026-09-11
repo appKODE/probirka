@@ -377,6 +377,6 @@ async def check_api():
     return True
 
 urlpatterns = [
-    path("health/", make_django_view(probirka_instance)),
+    path("health", make_django_view(probirka_instance)),
 ]
 ```

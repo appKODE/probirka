@@ -16,6 +16,7 @@ classifiers = [
   "Operating System :: OS Independent",
   "Framework :: AsyncIO",
   "Framework :: aiohttp",
+  "Framework :: Django",
   "Framework :: FastAPI",
   "Topic :: Software Development :: Libraries :: Python Modules",
   "Topic :: System :: Monitoring",

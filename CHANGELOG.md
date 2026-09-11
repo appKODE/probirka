@@ -1,5 +1,14 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- `make_django_view` — Django (>= 4.2) async view integration
+- `ProbeResult.to_dict()` and `ProbirkaResult.to_dict()` — JSON-compatible representation shared by all integrations
+
+### Changed
+- All integrations return the same JSON format: `started_at` as ISO 8601, `elapsed` in seconds (float). For aiohttp this replaces the previous `str(datetime)` / `str(timedelta)` values
+
 ## [0.5.0] - 2026-09-11
 
 ### Added

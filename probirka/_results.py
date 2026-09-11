@@ -26,6 +26,23 @@ class ProbeResult:
     info: Optional[Dict[str, Any]]
     error: Optional[str]
 
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        JSON-compatible representation of the result.
+
+        ``started_at`` is an ISO 8601 string, ``elapsed`` is the duration in seconds.
+        ``info`` is returned as is.
+        """
+        return {
+            'name': self.name,
+            'ok': self.ok,
+            'cached': self.cached,
+            'started_at': self.started_at.isoformat(),
+            'elapsed': self.elapsed.total_seconds(),
+            'info': self.info,
+            'error': self.error,
+        }
+
 
 @dataclass(frozen=True, order=True)
 class ProbirkaResult:
@@ -46,3 +63,19 @@ class ProbirkaResult:
     info: Optional[Dict[str, Any]]
     checks: Sequence[ProbeResult]
     error: Optional[str] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        JSON-compatible representation of the result, shared by all framework integrations.
+
+        ``started_at`` is an ISO 8601 string, ``elapsed`` is the duration in seconds,
+        ``checks`` is a list of :meth:`ProbeResult.to_dict`. ``info`` is returned as is.
+        """
+        return {
+            'ok': self.ok,
+            'started_at': self.started_at.isoformat(),
+            'elapsed': self.elapsed.total_seconds(),
+            'info': self.info,
+            'checks': [check.to_dict() for check in self.checks],
+            'error': self.error,
+        }

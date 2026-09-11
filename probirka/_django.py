@@ -1,9 +1,10 @@
-from dataclasses import asdict
 from typing import Any, Callable, Coroutine, List, Optional, Union
 
-from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.http import HttpRequest, HttpResponse, HttpResponseNotAllowed, JsonResponse
 
 from probirka import Probirka
+
+_ALLOWED_METHODS = ('GET', 'HEAD')
 
 
 def make_django_view(
@@ -18,6 +19,9 @@ def make_django_view(
     """
     Create a Django async view for a given Probirka instance.
 
+    The view accepts ``GET`` (and ``HEAD``) requests only; other methods get ``405``.
+    The JSON body is :meth:`ProbirkaResult.to_dict`, the same format as the other integrations.
+
     Args:
         probirka (Probirka): The Probirka instance to run.
         timeout (Optional[int]): The timeout for the Probirka run.
@@ -31,16 +35,18 @@ def make_django_view(
         Callable[[HttpRequest], Coroutine[Any, Any, HttpResponse]]: The Django async view.
     """
 
-    async def view(_: HttpRequest) -> HttpResponse:
+    async def view(request: HttpRequest) -> HttpResponse:
         """
         The Django view that runs the Probirka instance.
 
         Args:
-            _: The Django request object.
+            request: The Django request object.
 
         Returns:
             HttpResponse: The HTTP response with the Probirka results.
         """
+        if request.method not in _ALLOWED_METHODS:
+            return HttpResponseNotAllowed(_ALLOWED_METHODS)
         res = await probirka.run(
             timeout=timeout,
             with_groups=with_groups,
@@ -48,7 +54,7 @@ def make_django_view(
         )
         status_code = success_code if res.ok else error_code
         if return_results:
-            return JsonResponse(asdict(res), status=status_code, safe=False)
+            return JsonResponse(res.to_dict(), status=status_code, json_dumps_params={'default': str})
         return HttpResponse(status=status_code)
 
     return view

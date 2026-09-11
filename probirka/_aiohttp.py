@@ -1,6 +1,5 @@
 import json
 
-from dataclasses import asdict
 from typing import Any, Callable, Coroutine, List, Optional, Union
 
 from aiohttp import web
@@ -53,7 +52,7 @@ def make_aiohttp_endpoint(
         status_code = success_code if res.ok else error_code
         return (
             web.json_response(
-                text=json.dumps(obj=asdict(res), default=str),
+                text=json.dumps(obj=res.to_dict(), default=str),
                 status=status_code,
             )
             if return_results
