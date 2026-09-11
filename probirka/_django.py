@@ -1,13 +1,13 @@
-import json
-
 from typing import Any, Callable, Coroutine, List, Optional, Union
 
-from aiohttp import web
+from django.http import HttpRequest, HttpResponse, HttpResponseNotAllowed, JsonResponse
 
 from probirka import Probirka
 
+_ALLOWED_METHODS = ('GET', 'HEAD')
 
-def make_aiohttp_endpoint(
+
+def make_django_view(
     probirka: Probirka,
     timeout: Optional[int] = None,
     with_groups: Union[str, List[str]] = '',
@@ -15,9 +15,12 @@ def make_aiohttp_endpoint(
     return_results: bool = True,
     success_code: int = 200,
     error_code: int = 500,
-) -> Callable[[web.Request], Coroutine[Any, Any, web.Response]]:
+) -> Callable[[HttpRequest], Coroutine[Any, Any, HttpResponse]]:
     """
-    Create an aiohttp endpoint for a given Probirka instance.
+    Create a Django async view for a given Probirka instance.
+
+    The view accepts ``GET`` (and ``HEAD``) requests only; other methods get ``405``.
+    The JSON body is :meth:`ProbirkaResult.to_dict`, the same format as the other integrations.
 
     Args:
         probirka (Probirka): The Probirka instance to run.
@@ -29,37 +32,29 @@ def make_aiohttp_endpoint(
         error_code (int): The HTTP status code for an error response.
 
     Returns:
-        Callable[[web.Request], Coroutine[Any, Any, web.Response]]: The aiohttp endpoint.
+        Callable[[HttpRequest], Coroutine[Any, Any, HttpResponse]]: The Django async view.
     """
 
-    async def endpoint(
-        _: web.Request,
-    ) -> web.Response:
+    async def view(request: HttpRequest) -> HttpResponse:
         """
-        The aiohttp endpoint that runs the Probirka instance.
+        The Django view that runs the Probirka instance.
 
         Args:
-            _: The aiohttp request object.
+            request: The Django request object.
 
         Returns:
-            web.Response: The HTTP response with the Probirka results.
+            HttpResponse: The HTTP response with the Probirka results.
         """
+        if request.method not in _ALLOWED_METHODS:
+            return HttpResponseNotAllowed(_ALLOWED_METHODS)
         res = await probirka.run(
             timeout=timeout,
             with_groups=with_groups,
             skip_required=skip_required,
         )
         status_code = success_code if res.ok else error_code
-        return (
-            web.json_response(
-                text=json.dumps(obj=res.to_dict(), default=str),
-                status=status_code,
-            )
-            if return_results
-            else web.Response(
-                body='',
-                status=status_code,
-            )
-        )
+        if return_results:
+            return JsonResponse(res.to_dict(), status=status_code, json_dumps_params={'default': str})
+        return HttpResponse(status=status_code)
 
-    return endpoint
+    return view

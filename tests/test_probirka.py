@@ -1,4 +1,6 @@
 import asyncio
+import json
+from datetime import datetime
 
 import pytest
 from probirka import Probirka
@@ -130,3 +132,27 @@ async def test_unknown_group_is_ignored() -> None:
     assert results.ok is True
     assert not results.checks
     assert 'missing' not in checks._optional_probes
+
+
+@pytest.mark.asyncio
+async def test_to_dict_is_json_compatible() -> None:
+    checks = Probirka()
+    checks.add_info('version', '1.0')
+
+    @checks.add(name='ok_check')
+    async def _ok() -> bool:
+        return True
+
+    results = await checks.run()
+    data = results.to_dict()
+
+    assert data['ok'] is True
+    assert data['error'] is None
+    assert data['info'] == {'version': '1.0'}
+    assert isinstance(data['elapsed'], float)
+    assert datetime.fromisoformat(data['started_at']) == results.started_at
+    assert isinstance(data['checks'], list)
+    assert data['checks'][0]['name'] == 'ok_check'
+    assert isinstance(data['checks'][0]['elapsed'], float)
+    assert data['checks'][0]['started_at'] == results.checks[0].started_at.isoformat()
+    assert json.loads(json.dumps(data)) == data

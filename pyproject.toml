@@ -16,6 +16,7 @@ classifiers = [
   "Operating System :: OS Independent",
   "Framework :: AsyncIO",
   "Framework :: aiohttp",
+  "Framework :: Django",
   "Framework :: FastAPI",
   "Topic :: Software Development :: Libraries :: Python Modules",
   "Topic :: System :: Monitoring",
@@ -40,6 +41,7 @@ build-backend = "hatchling.build"
 [dependency-groups]
 dev = [
   "aiohttp>=3.10.11",
+  "django>=4.2",
   "bandit>=1.7.10",
   "fastapi>=0.115.6",
   "httpx>=0.28.1",

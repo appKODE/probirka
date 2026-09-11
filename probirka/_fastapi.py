@@ -44,7 +44,7 @@ def make_fastapi_endpoint(
             with_groups=with_groups,
             skip_required=skip_required,
         )
-        resp = JSONResponse(jsonable_encoder(res)) if return_results else Response()
+        resp = JSONResponse(jsonable_encoder(res.to_dict())) if return_results else Response()
         resp.status_code = success_code if res.ok else error_code
         return resp
 

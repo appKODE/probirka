@@ -317,6 +317,31 @@ The caching mechanism works as follows:
 
 ## Integration Examples
 
+Every integration answers `GET /health` with `200` when all checks pass and `500` otherwise (both codes are configurable) and returns `ProbirkaResult.to_dict()` as JSON:
+
+```json
+{
+  "ok": true,
+  "started_at": "2025-04-02T09:41:53.417898",
+  "elapsed": 1.0016,
+  "info": {"version": "1.0.0"},
+  "checks": [
+    {
+      "name": "database",
+      "ok": true,
+      "cached": null,
+      "started_at": "2025-04-02T09:41:53.417942",
+      "elapsed": 1.00143,
+      "info": null,
+      "error": null
+    }
+  ],
+  "error": null
+}
+```
+
+`started_at` is an ISO 8601 timestamp, `elapsed` is the duration in seconds. Pass `return_results=False` to get an empty body with just the status code.
+
 ### FastAPI Integration
 
 ```python
@@ -361,4 +386,22 @@ app.router.add_get('/health', aiohttp_endpoint)
 
 if __name__ == '__main__':
     web.run_app(app)
+```
+
+### Django Integration
+
+```python
+# urls.py
+from django.urls import path
+from probirka import Probirka, make_django_view
+
+probirka_instance = Probirka()
+
+@probirka_instance.add(name="api")
+async def check_api():
+    return True
+
+urlpatterns = [
+    path("health", make_django_view(probirka_instance)),
+]
 ```
