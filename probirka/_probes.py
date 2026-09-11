@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
-from asyncio import TimeoutError as AsyncTimeoutError, get_running_loop, iscoroutinefunction, wait_for
+from asyncio import TimeoutError as AsyncTimeoutError, get_running_loop, wait_for
 from datetime import datetime, timedelta
-from typing import Any, Callable, Dict, Optional, Protocol, Union
+from inspect import isawaitable, iscoroutinefunction
+from typing import Any, Awaitable, Callable, Dict, Optional, Protocol, Union
 
 from probirka._results import ProbeResult
 
@@ -185,13 +186,15 @@ class CallableProbe(ProbeBase):
 
     Coroutine functions are awaited directly. Plain functions are executed in the
     event loop's default executor so they neither block the loop nor escape the
-    probe timeout. Note that on timeout the worker thread keeps running until the
-    function returns; only the wait is cancelled.
+    probe timeout. If a plain callable returns an awaitable (for example an object
+    with an ``async def __call__`` or a function returning a coroutine), that
+    awaitable is awaited too. Note that on timeout the worker thread keeps running
+    until the function returns; only the wait is cancelled.
     """
 
     def __init__(
         self,
-        func: Callable[[], Optional[bool]],
+        func: Callable[[], Union[Optional[bool], Awaitable[Optional[bool]]]],
         name: Optional[str] = None,
         timeout: Optional[int] = None,
         success_ttl: Optional[Union[int, timedelta]] = None,
@@ -224,4 +227,7 @@ class CallableProbe(ProbeBase):
         """
         if iscoroutinefunction(self._func):
             return await self._func()
-        return await get_running_loop().run_in_executor(None, self._func)
+        result = await get_running_loop().run_in_executor(None, self._func)
+        if isawaitable(result):
+            return await result
+        return result
