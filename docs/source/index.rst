@@ -11,6 +11,7 @@ Probirka is a Python 3 library for writing simple asynchronous health checks (pr
 
    installation
    usage
+   probes
    integration
    api
 

@@ -1,27 +1,14 @@
-import asyncio
-
 import pytest
+
+pytest.importorskip('fastapi')
+
 from fastapi import FastAPI, status
 from fastapi.testclient import TestClient
 
-from probirka import Probirka, ProbeBase
-from probirka._fastapi import make_fastapi_endpoint
+from probirka import Probirka
+from probirka.ext.fastapi import make_fastapi_endpoint
+from tests.helpers import FailureProbe, SlowProbe, SuccessProbe
 
-
-class SuccessProbe(ProbeBase):
-    async def _check(self) -> bool:
-        return True
-
-
-class FailureProbe(ProbeBase):
-    async def _check(self) -> bool:
-        return False
-
-
-class SlowProbe(ProbeBase):
-    async def _check(self) -> bool:
-        await asyncio.sleep(1)
-        return True
 
 
 @pytest.fixture

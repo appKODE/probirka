@@ -106,29 +106,39 @@ There are multiple ways to add probes to a Probirka instance:
        await asyncio.sleep(0.5)
        return True
 
-2. Using the `add_probe` method with a function:
+2. Wrapping a function in `CallableProbe` and registering it with `add_probes`:
 
 .. code-block:: python
+
+   from probirka import CallableProbe
 
    async def check_redis():
        # Redis check logic
        return True
-       
-   probirka.add_probe(name="redis", check=check_redis, groups=["cache"])
+
+   probirka.add_probes(CallableProbe(check_redis, name="redis"), groups=["cache"])
 
 3. Using custom probe classes:
 
 .. code-block:: python
 
    from probirka import ProbeBase
-   
+
    class DatabaseProbe(ProbeBase):
        async def _check(self):
            # Database check logic
            return True
-   
+
    # Add the probe instance
-   probirka.add_probe(DatabaseProbe(name="database"))
+   probirka.add_probes(DatabaseProbe(name="database"))
+
+4. Using a ready-made probe from :doc:`probes`:
+
+.. code-block:: python
+
+   from probirka.probes import RedisProbe
+
+   probirka.add_probes(RedisProbe(url="redis://localhost:6379/0", timeout=1), groups=["cache"])
 
 Creating Custom Checks
 ----------------------

@@ -174,6 +174,35 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
+## Ready-made Probes
+
+`probirka.probes` ships probes for common dependencies. They are ordinary `ProbeBase` subclasses; `probirka` itself stays dependency-free, so install the client library you need alongside (a missing one raises an `ImportError` that names the package):
+
+| Probe | Requires | Check |
+|---|---|---|
+| `TcpProbe` | – | TCP connect to `host:port` |
+| `PostgresAsyncpgProbe` | `asyncpg` | `SELECT 1` |
+| `RedisProbe` | `redis` | `PING` |
+| `HttpHttpxProbe` / `HttpHttpx2Probe` / `HttpAiohttpProbe` | `httpx` / `httpx2` / `aiohttp` | request, expected status code |
+| `KafkaAiokafkaProbe` | `aiokafka` | fetch cluster metadata |
+| `RabbitmqAiopikaProbe` | `aio-pika` | open a channel |
+| `MongoPymongoProbe` / `MongoMotorProbe` | `pymongo>=4.9` / `motor` | `ping` command |
+
+Each probe takes either an existing client of your application (or a zero-argument function returning it, for clients created later in a lifespan) or a connection string; with a connection string a short-lived connection is opened on every check:
+
+```python
+from probirka import Probirka
+from probirka.probes import HttpHttpxProbe, PostgresAsyncpgProbe, RedisProbe, TcpProbe
+
+probirka = Probirka()
+probirka.add_probes(
+    PostgresAsyncpgProbe(lambda: app.state.pool, name="postgres", timeout=2),  # reuse the app's pool
+    RedisProbe(url="redis://cache:6379/0", name="redis", timeout=1),          # connect per check
+    HttpHttpxProbe("https://api.example.com/health", name="api", expected_status={200, 204}),
+    TcpProbe("smtp.example.com", 25, name="smtp"),
+)
+```
+
 ## Advanced Usage
 
 ### Creating Custom Probes
@@ -317,6 +346,8 @@ The caching mechanism works as follows:
 
 ## Integration Examples
 
+The adapters live in `probirka.ext` and are thin wrappers over `Probirka.run()`; the framework itself must be installed. For backward compatibility they are also importable from `probirka` directly.
+
 Every integration answers `GET /health` with `200` when all checks pass and `500` otherwise (both codes are configurable) and returns `ProbirkaResult.to_dict()` as JSON:
 
 ```json
@@ -346,7 +377,8 @@ Every integration answers `GET /health` with `200` when all checks pass and `500
 
 ```python
 from fastapi import FastAPI
-from probirka import Probirka, make_fastapi_endpoint
+from probirka import Probirka
+from probirka.ext.fastapi import make_fastapi_endpoint
 
 app = FastAPI()
 probirka_instance = Probirka()
@@ -370,7 +402,8 @@ if __name__ == "__main__":
 
 ```python
 from aiohttp import web
-from probirka import Probirka, make_aiohttp_endpoint
+from probirka import Probirka
+from probirka.ext.aiohttp import make_aiohttp_endpoint
 
 app = web.Application()
 probirka_instance = Probirka()
@@ -393,7 +426,8 @@ if __name__ == '__main__':
 ```python
 # urls.py
 from django.urls import path
-from probirka import Probirka, make_django_view
+from probirka import Probirka
+from probirka.ext.django import make_django_view
 
 probirka_instance = Probirka()
 

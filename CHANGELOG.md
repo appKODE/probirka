@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- `probirka.probes` — ready-made probes: `TcpProbe` (no dependencies), `PostgresAsyncpgProbe`, `RedisProbe`, `HttpHttpxProbe`, `HttpHttpx2Probe`, `HttpAiohttpProbe`, `KafkaAiokafkaProbe`, `RabbitmqAiopikaProbe`, `MongoPymongoProbe`, `MongoMotorProbe`. Each accepts an existing client (or a zero-argument function returning one) or a connection string
+- `probirka.probes.ProbeFailure` — exception for "the service answered, but not in a healthy way"; its message goes to `ProbeResult.error`
+- `CallableProbe` is exported from the `probirka` package
+
+### Changed
+- Framework adapters moved to `probirka.ext.fastapi`, `probirka.ext.aiohttp`, `probirka.ext.django`. `probirka.make_fastapi_endpoint`, `probirka.make_aiohttp_endpoint` and `probirka.make_django_view` still work and are resolved lazily; when the framework is missing they raise an `ImportError` naming the package instead of an `AttributeError`
+- `probirka` stays dependency-free; client libraries and frameworks are installed separately (no extras)
+
 ## [0.6.1] - 2026-09-11
 
 ### Fixed

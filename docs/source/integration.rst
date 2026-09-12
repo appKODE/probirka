@@ -1,6 +1,13 @@
 Framework Integration
 =====================
 
+The adapters live in ``probirka.ext`` and are thin wrappers over :meth:`probirka.Probirka.run`:
+they run the probes, map ``ok`` to a status code and return :meth:`probirka.ProbirkaResult.to_dict`
+as JSON. Import them from ``probirka.ext.<framework>``; the framework itself must be installed.
+For backward compatibility the same functions are also available as
+``probirka.make_fastapi_endpoint``, ``probirka.make_aiohttp_endpoint`` and
+``probirka.make_django_view``.
+
 FastAPI
 -------
 
@@ -9,7 +16,8 @@ Here's an example of FastAPI integration:
 .. code-block:: python
 
    from fastapi import FastAPI
-   from probirka import Probirka, make_fastapi_endpoint
+   from probirka import Probirka
+   from probirka.ext.fastapi import make_fastapi_endpoint
 
    app = FastAPI()
    probirka_instance = Probirka()
@@ -61,7 +69,8 @@ Here's an example of aiohttp integration:
 .. code-block:: python
 
    from aiohttp import web
-   from probirka import Probirka, make_aiohttp_endpoint
+   from probirka import Probirka
+   from probirka.ext.aiohttp import make_aiohttp_endpoint
 
    app = web.Application()
    probirka_instance = Probirka()
@@ -88,7 +97,8 @@ Here's an example of Django integration:
 
    # urls.py
    from django.urls import path
-   from probirka import Probirka, make_django_view
+   from probirka import Probirka
+   from probirka.ext.django import make_django_view
 
    probirka_instance = Probirka()
 

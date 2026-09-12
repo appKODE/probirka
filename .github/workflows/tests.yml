@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         just-trigger:
-          - "fmt"
+          - "fmt-check"
           - "lint"
           - "mypy"
     steps:
@@ -19,7 +19,7 @@ jobs:
       - uses: extractions/setup-just@v2
       - uses: astral-sh/setup-uv@v4
       - run: uv python install 3.8
-      - run: uv sync --all-extras --dev
+      - run: uv sync --dev
       - run: just ${{ matrix.just-trigger }}
 
   tests:
@@ -39,8 +39,10 @@ jobs:
       - uses: extractions/setup-just@v2
       - uses: astral-sh/setup-uv@v4
       - run: uv python install ${{ matrix.python-version }}
-      - run: uv sync --all-extras --dev
+      - run: uv sync --dev
       - run: just tests
+      # the core must import without a single third-party package installed
+      - run: uv run --isolated --no-project --with . python -c "import probirka, probirka.probes"
       - uses: coverallsapp/github-action@master
         with:
           github-token: ${{ secrets.github_token }}
