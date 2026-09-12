@@ -81,18 +81,42 @@ async def test_transport_error_is_reported() -> None:
 
 
 @pytest.mark.asyncio
-async def test_temporary_client_is_created_and_closed(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_temporary_client_is_created_with_probe_timeout_and_closed(monkeypatch: pytest.MonkeyPatch) -> None:
     created = []
 
     class _Client(httpx.AsyncClient):
-        def __init__(self) -> None:
-            super().__init__(transport=httpx.MockTransport(lambda _: httpx.Response(200)))
+        def __init__(self, timeout: object) -> None:
+            super().__init__(transport=httpx.MockTransport(lambda _: httpx.Response(200)), timeout=timeout)
             created.append(self)
 
     monkeypatch.setattr(httpx, 'AsyncClient', _Client)
 
-    result = await HttpHttpx2Probe('http://svc/health').run_check()
+    result = await HttpHttpx2Probe('http://svc/health', timeout=7).run_check()
 
     assert result.ok is True
     assert len(created) == 1
     assert created[0].is_closed
+    assert created[0].timeout == httpx.Timeout(7)
+
+
+@pytest.mark.asyncio
+async def test_temporary_client_without_probe_timeout_has_no_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
+    created = []
+
+    class _Client(httpx.AsyncClient):
+        def __init__(self, timeout: object) -> None:
+            super().__init__(transport=httpx.MockTransport(lambda _: httpx.Response(200)), timeout=timeout)
+            created.append(self)
+
+    monkeypatch.setattr(httpx, 'AsyncClient', _Client)
+
+    await HttpHttpx2Probe('http://svc/health').run_check()
+
+    assert created[0].timeout == httpx.Timeout(None)
+
+
+@pytest.mark.asyncio
+async def test_expected_status_accepts_single_int() -> None:
+    result = await HttpHttpx2Probe('http://svc/health', expected_status=204, client=make_client(204, [])).run_check()
+
+    assert result.ok is True

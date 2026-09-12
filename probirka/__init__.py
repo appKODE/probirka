@@ -37,6 +37,7 @@ __description__ = (
 __all__ = [
     'CallableProbe',
     'ClientOrFactory',
+    'MissingDependencyError',
     'Probe',
     'ProbeBase',
     'ProbeFailure',
@@ -46,34 +47,51 @@ __all__ = [
     'TcpProbe',
 ]
 
-# name -> (module, pip package). Resolved on first access so that importing ``probirka``
-# never requires any client library or framework; a missing one raises an ``ImportError``
-# that names the package to install.
-_LAZY: Dict[str, Tuple[str, str]] = {
-    'HttpAiohttpProbe': ('probirka._probes._http_aiohttp', 'aiohttp'),
-    'HttpHttpx2Probe': ('probirka._probes._http_httpx2', 'httpx2'),
-    'HttpHttpxProbe': ('probirka._probes._http_httpx', 'httpx'),
-    'KafkaAiokafkaProbe': ('probirka._probes._kafka_aiokafka', 'aiokafka'),
-    'MongoMotorProbe': ('probirka._probes._mongo_motor', 'motor'),
-    'MongoPymongoProbe': ('probirka._probes._mongo_pymongo', 'pymongo'),
-    'PostgresAsyncpgProbe': ('probirka._probes._postgres_asyncpg', 'asyncpg'),
-    'RabbitmqAiopikaProbe': ('probirka._probes._rabbitmq_aiopika', 'aio-pika'),
-    'RedisProbe': ('probirka._probes._redis', 'redis'),
-    'make_aiohttp_endpoint': ('probirka._ext.aiohttp', 'aiohttp'),
-    'make_django_view': ('probirka._ext.django', 'django'),
-    'make_fastapi_endpoint': ('probirka._ext.fastapi', 'fastapi'),
+
+class MissingDependencyError(ImportError):
+    """
+    Raised when a lazily loaded name needs a package that is not installed.
+
+    Deliberately an ``ImportError`` rather than an ``AttributeError``: ``from probirka import X``
+    turns an ``AttributeError`` into a bare "cannot import name", dropping the install hint.
+    The consequence is that ``hasattr(probirka, 'RedisProbe')`` raises on a bare install; use
+    ``importlib.util.find_spec`` to feature-detect a client library instead.
+    """
+
+
+# name -> (module, import name, pip package). Resolved on first access so that importing
+# ``probirka`` never requires any client library or framework.
+_LAZY: Dict[str, Tuple[str, str, str]] = {
+    'HttpAiohttpProbe': ('probirka._probes._http_aiohttp', 'aiohttp', 'aiohttp'),
+    'HttpHttpx2Probe': ('probirka._probes._http_httpx2', 'httpx2', 'httpx2'),
+    'HttpHttpxProbe': ('probirka._probes._http_httpx', 'httpx', 'httpx'),
+    'KafkaAiokafkaProbe': ('probirka._probes._kafka_aiokafka', 'aiokafka', 'aiokafka'),
+    'MongoMotorProbe': ('probirka._probes._mongo_motor', 'motor', 'motor'),
+    'MongoPymongoProbe': ('probirka._probes._mongo_pymongo', 'pymongo', 'pymongo'),
+    'PostgresAsyncpgProbe': ('probirka._probes._postgres_asyncpg', 'asyncpg', 'asyncpg'),
+    'RabbitmqAiopikaProbe': ('probirka._probes._rabbitmq_aiopika', 'aio_pika', 'aio-pika'),
+    'RedisProbe': ('probirka._probes._redis', 'redis', 'redis'),
+    'make_aiohttp_endpoint': ('probirka._ext.aiohttp', 'aiohttp', 'aiohttp'),
+    'make_django_view': ('probirka._ext.django', 'django', 'django'),
+    'make_fastapi_endpoint': ('probirka._ext.fastapi', 'fastapi', 'fastapi'),
 }
 
 
 def __getattr__(name: str) -> Any:
     try:
-        module_name, package = _LAZY[name]
+        module_name, import_name, package = _LAZY[name]
     except KeyError:
         raise AttributeError(f'module {__name__!r} has no attribute {name!r}') from None
     try:
         module = import_module(module_name)
-    except ImportError as exc:
-        raise ImportError(f"{name} requires the '{package}' package, install it with: pip install {package}") from exc
+    except ModuleNotFoundError as exc:
+        # only "the package itself is not installed" gets the install hint; a too-old or broken
+        # install (e.g. ``redis`` without ``redis.asyncio``) keeps its original error
+        if exc.name == import_name:
+            raise MissingDependencyError(
+                f"{name} requires the '{package}' package, install it with: pip install {package}"
+            ) from exc
+        raise
     value = getattr(module, name)
     globals()[name] = value  # cache: later lookups bypass __getattr__
     return value

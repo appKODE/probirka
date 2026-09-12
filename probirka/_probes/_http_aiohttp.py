@@ -13,8 +13,9 @@ class HttpAiohttpProbe(HttpProbeBase):
     or a temporary one, and fails unless the status code is in ``expected_status``.
     """
 
-    def _new_client(self) -> aiohttp.ClientSession:
-        return aiohttp.ClientSession()
+    def _temporary_client(self) -> aiohttp.ClientSession:
+        # the probe timeout is the only limit; aiohttp would otherwise apply its own 5 min default
+        return aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=self._timeout))
 
     async def _request_status(self, client: Any) -> int:
         async with client.request(self._method, self._url, headers=self._headers) as response:

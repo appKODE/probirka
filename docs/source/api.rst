@@ -28,6 +28,10 @@ All probes below are importable from the ``probirka`` package, e.g. ``from probi
    :members: ProbeFailure, resolve
    :show-inheritance:
 
+.. automodule:: probirka._probes._client_base
+   :members:
+   :show-inheritance:
+
 .. automodule:: probirka._probes._tcp
    :members:
    :show-inheritance:

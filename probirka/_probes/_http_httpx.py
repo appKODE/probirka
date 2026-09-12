@@ -13,8 +13,9 @@ class HttpHttpxProbe(HttpProbeBase):
     or a temporary one, and fails unless the status code is in ``expected_status``.
     """
 
-    def _new_client(self) -> httpx.AsyncClient:
-        return httpx.AsyncClient()
+    def _temporary_client(self) -> httpx.AsyncClient:
+        # the probe timeout is the only limit; httpx would otherwise apply its own 5 s default
+        return httpx.AsyncClient(timeout=self._timeout)
 
     async def _request_status(self, client: Any) -> int:
         response = await client.request(self._method, self._url, headers=self._headers)

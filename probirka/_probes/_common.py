@@ -1,6 +1,6 @@
 from functools import partial
 from inspect import isroutine
-from typing import Any, Callable, Dict, TypeVar, Union
+from typing import Any, Callable, TypeVar, Union
 
 T = TypeVar('T')
 
@@ -48,13 +48,3 @@ def require_exactly_one(**kwargs: Any) -> None:
         raise ValueError(f'one of {names} is required')
     if len(provided) > 1:
         raise ValueError(f'{names} are mutually exclusive, got {", ".join(provided)}')
-
-
-def only_set(**kwargs: Any) -> Dict[str, Any]:
-    """
-    Drop ``None`` values so they do not override a driver's defaults.
-
-    :param kwargs: Keyword arguments to filter.
-    :return: The same mapping without ``None`` values.
-    """
-    return {name: value for name, value in kwargs.items() if value is not None}

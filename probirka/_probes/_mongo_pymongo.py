@@ -1,8 +1,7 @@
-from typing import Any, Optional
+from typing import Any
 
 from pymongo import AsyncMongoClient
 
-from probirka._probes._common import only_set
 from probirka._probes._mongo_base import MongoProbeBase
 
 
@@ -15,11 +14,8 @@ class MongoPymongoProbe(MongoProbeBase):
     or on a short-lived client created from ``url``.
     """
 
-    def _new_client(self, url: str, timeout: Optional[int]) -> Any:
-        return AsyncMongoClient(
-            url,
-            **only_set(serverSelectionTimeoutMS=timeout * 1000 if timeout is not None else None),
-        )
+    def _new_client(self, url: str, **kwargs: Any) -> Any:
+        return AsyncMongoClient(url, **kwargs)
 
     async def _close_client(self, client: Any) -> None:
         await client.close()

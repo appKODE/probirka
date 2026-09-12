@@ -1,12 +1,13 @@
 from abc import abstractmethod
+from contextlib import asynccontextmanager
 from datetime import timedelta
-from typing import Any, Optional, Union
+from typing import Any, AsyncIterator, Dict, Optional, Union
 
-from probirka._probes import ProbeBase
-from probirka._probes._common import ClientOrFactory, require_exactly_one, resolve
+from probirka._probes._client_base import ClientProbeBase
+from probirka._probes._common import ClientOrFactory, require_exactly_one
 
 
-class MongoProbeBase(ProbeBase):
+class MongoProbeBase(ClientProbeBase):
     """
     Shared logic for MongoDB probes: run the ``ping`` admin command.
 
@@ -29,8 +30,8 @@ class MongoProbeBase(ProbeBase):
         :param client: A MongoDB client or a zero-argument callable returning one.
         :param url: MongoDB URI, e.g. ``mongodb://localhost:27017``. Mutually exclusive with ``client``.
         :param name: The name of the probe. Defaults to the class name.
-        :param timeout: The timeout for the probe. For the ``url`` mode it is also used as the driver's
-            ``serverSelectionTimeoutMS`` so that the driver's 30 s default does not hide it.
+        :param timeout: The timeout for the probe. For the ``url`` mode it is also passed to the driver as
+            ``serverSelectionTimeoutMS`` so that the failure is reported by the driver, not as a bare timeout.
         :param success_ttl: Cache duration for successful results.
         :param failed_ttl: Cache duration for failed results.
         """
@@ -40,8 +41,8 @@ class MongoProbeBase(ProbeBase):
         self._url = url
 
     @abstractmethod
-    def _new_client(self, url: str, timeout: Optional[int]) -> Any:
-        """Create a temporary client for ``url``."""
+    def _new_client(self, url: str, **kwargs: Any) -> Any:
+        """Create a temporary client for ``url`` with the driver keyword arguments."""
         raise NotImplementedError
 
     @abstractmethod
@@ -49,13 +50,17 @@ class MongoProbeBase(ProbeBase):
         """Close a temporary client."""
         raise NotImplementedError
 
-    async def _check(self) -> Optional[bool]:
-        if self._client is not None:
-            await resolve(self._client).admin.command('ping')
-            return True
-        client = self._new_client(self._url, self._timeout)  # type: ignore[arg-type]
+    @asynccontextmanager
+    async def _temporary_client(self) -> AsyncIterator[Any]:
+        assert self._url is not None
+        kwargs: Dict[str, Any] = {}
+        if self._timeout is not None:
+            kwargs['serverSelectionTimeoutMS'] = self._timeout * 1000
+        client = self._new_client(self._url, **kwargs)
         try:
-            await client.admin.command('ping')
+            yield client
         finally:
             await self._close_client(client)
-        return True
+
+    async def _check_client(self, client: Any) -> None:
+        await client.admin.command('ping')

@@ -60,11 +60,18 @@ async def test_client_error_is_reported() -> None:
     assert result.error == 'ConnectionError: refused'
 
 
-@pytest.mark.asyncio
-async def test_url_creates_and_closes_client(monkeypatch: pytest.MonkeyPatch) -> None:
+def make_url_client(ping: AsyncMock) -> MagicMock:
+    """A stand-in for ``Redis.from_url(...)``: an async context manager yielding itself."""
     client = MagicMock()
-    client.ping = AsyncMock(return_value=True)
-    client.aclose = AsyncMock()
+    client.ping = ping
+    client.__aenter__ = AsyncMock(return_value=client)
+    client.__aexit__ = AsyncMock(return_value=None)
+    return client
+
+
+@pytest.mark.asyncio
+async def test_url_uses_client_as_context_manager(monkeypatch: pytest.MonkeyPatch) -> None:
+    client = make_url_client(AsyncMock(return_value=True))
     from_url = MagicMock(return_value=client)
     monkeypatch.setattr(redis.asyncio.Redis, 'from_url', from_url)
 
@@ -72,18 +79,21 @@ async def test_url_creates_and_closes_client(monkeypatch: pytest.MonkeyPatch) ->
 
     assert result.ok is True
     from_url.assert_called_once_with('redis://localhost:6379/0')
-    client.aclose.assert_awaited_once()
+    client.__aexit__.assert_awaited_once()
 
 
 @pytest.mark.asyncio
-async def test_url_falls_back_to_close_on_old_redis(monkeypatch: pytest.MonkeyPatch) -> None:
-    client = MagicMock(spec=['ping', 'close'])
-    client.ping = AsyncMock(side_effect=RuntimeError('down'))
-    client.close = AsyncMock()
+async def test_url_closes_client_on_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    client = make_url_client(AsyncMock(side_effect=RuntimeError('down')))
     monkeypatch.setattr(redis.asyncio.Redis, 'from_url', MagicMock(return_value=client))
 
     result = await RedisProbe(url='redis://localhost').run_check()
 
     assert result.ok is False
     assert result.error == 'RuntimeError: down'
-    client.close.assert_awaited_once()
+    client.__aexit__.assert_awaited_once()
+
+
+def test_real_redis_client_is_an_async_context_manager() -> None:
+    assert hasattr(redis.asyncio.Redis, '__aenter__')
+    assert hasattr(redis.asyncio.Redis, '__aexit__')

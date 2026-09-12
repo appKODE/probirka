@@ -75,3 +75,19 @@ async def test_connection_error_is_reported() -> None:
     assert result.ok is False
     assert result.error is not None
     assert 'ClientConnectorError' in result.error
+
+
+@pytest.mark.asyncio
+async def test_temporary_session_gets_probe_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
+    created = []
+    real_session = aiohttp.ClientSession
+
+    def _session(**kwargs: object) -> aiohttp.ClientSession:
+        created.append(kwargs)
+        return real_session(**kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(aiohttp, 'ClientSession', _session)
+
+    await HttpAiohttpProbe('http://127.0.0.1:1/health', timeout=3).run_check()
+
+    assert created[0]['timeout'] == aiohttp.ClientTimeout(total=3)

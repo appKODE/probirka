@@ -12,8 +12,9 @@ class HttpHttpx2Probe(HttpProbeBase):
     Same behaviour as :class:`HttpHttpxProbe`, built on ``httpx2.AsyncClient``.
     """
 
-    def _new_client(self) -> httpx2.AsyncClient:
-        return httpx2.AsyncClient()
+    def _temporary_client(self) -> httpx2.AsyncClient:
+        # the probe timeout is the only limit; httpx2 would otherwise apply its own 5 s default
+        return httpx2.AsyncClient(timeout=self._timeout)
 
     async def _request_status(self, client: Any) -> int:
         response = await client.request(self._method, self._url, headers=self._headers)

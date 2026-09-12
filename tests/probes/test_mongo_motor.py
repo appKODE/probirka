@@ -13,7 +13,7 @@ from probirka import MongoMotorProbe
 def make_client(side_effect: object = None) -> MagicMock:
     client = MagicMock()
     client.admin.command = AsyncMock(return_value={'ok': 1.0}, side_effect=side_effect)
-    client.close = MagicMock()  # synchronous in Motor
+    client.close = MagicMock()  # synchronous in Motor, run in an executor by the probe
     return client
 
 

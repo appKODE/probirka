@@ -1,13 +1,13 @@
 from datetime import timedelta
-from typing import Any, Optional, Union
+from typing import Any, AsyncContextManager, Optional, Union
 
 from redis.asyncio import Redis
 
-from probirka._probes import ProbeBase
-from probirka._probes._common import ClientOrFactory, ProbeFailure, require_exactly_one, resolve
+from probirka._probes._client_base import ClientProbeBase
+from probirka._probes._common import ClientOrFactory, ProbeFailure, require_exactly_one
 
 
-class RedisProbe(ProbeBase):
+class RedisProbe(ClientProbeBase):
     """
     Check Redis availability with `redis-py <https://github.com/redis/redis-py>`_ (``redis.asyncio``).
 
@@ -40,21 +40,11 @@ class RedisProbe(ProbeBase):
         self._client = client
         self._url = url
 
-    @staticmethod
-    async def _ping(client: Any) -> None:
+    def _temporary_client(self) -> AsyncContextManager[Any]:
+        assert self._url is not None
+        # ``Redis`` is an async context manager since redis-py 4.2; ``__aexit__`` closes the client
+        return Redis.from_url(self._url)
+
+    async def _check_client(self, client: Any) -> None:
         if not await client.ping():
             raise ProbeFailure('PING failed')
-
-    async def _check(self) -> Optional[bool]:
-        if self._client is not None:
-            await self._ping(resolve(self._client))
-            return True
-        assert self._url is not None
-        client = Redis.from_url(self._url)
-        try:
-            await self._ping(client)
-        finally:
-            # redis>=5 has aclose(); close() is the redis 4.x name
-            close = getattr(client, 'aclose', None) or client.close
-            await close()
-        return True

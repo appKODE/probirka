@@ -2,7 +2,7 @@ from functools import partial
 
 import pytest
 
-from probirka._probes._common import only_set, require_exactly_one, resolve
+from probirka._probes._common import require_exactly_one, resolve
 
 
 def test_resolve_returns_instance_as_is() -> None:
@@ -49,6 +49,3 @@ def test_require_exactly_one_rejects_both() -> None:
     with pytest.raises(ValueError, match='mutually exclusive'):
         require_exactly_one(client=object(), dsn='postgresql://')
 
-
-def test_only_set_drops_none() -> None:
-    assert only_set(a=1, b=None, c=0) == {'a': 1, 'c': 0}

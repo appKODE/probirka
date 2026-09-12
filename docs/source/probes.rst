@@ -106,8 +106,10 @@ HTTP probes
 -----------
 
 The HTTP probes take the URL as the first argument and compare the response status code with
-``expected_status`` (``(200,)`` by default). ``method`` and ``headers`` are optional. Without a
-``client`` a temporary one is created for each check:
+``expected_status`` (``(200,)`` by default; a single code is accepted too). ``method`` and
+``headers`` are optional. Without a ``client`` a temporary one is created for each check, with the
+probe ``timeout`` as its request timeout, so the client library's own default (5 s in httpx) never
+cuts a check short. When you pass your own client, its timeout settings apply as well:
 
 .. code-block:: python
 

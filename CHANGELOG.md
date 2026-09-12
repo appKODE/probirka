@@ -4,6 +4,7 @@
 
 ### Added
 - Ready-made probes, importable from `probirka`: `TcpProbe` (no dependencies), `PostgresAsyncpgProbe`, `RedisProbe`, `HttpHttpxProbe`, `HttpHttpx2Probe`, `HttpAiohttpProbe`, `KafkaAiokafkaProbe`, `RabbitmqAiopikaProbe`, `MongoPymongoProbe`, `MongoMotorProbe`. Each accepts an existing client (or a zero-argument function returning one) or a connection string
+- `MissingDependencyError` (an `ImportError`) raised on access to a probe or adapter whose client library is not installed; a library that is installed but too old keeps its original error
 - `ProbeFailure` — exception for "the service answered, but not in a healthy way"; its message goes to `ProbeResult.error`
 - `CallableProbe` is exported from the `probirka` package; names that need a third-party package (probes, `make_*` adapters) are resolved lazily and are not part of `__all__`, so `from probirka import *` works with a bare install
 

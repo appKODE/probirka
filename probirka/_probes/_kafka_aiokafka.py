@@ -1,13 +1,15 @@
+from contextlib import asynccontextmanager
 from datetime import timedelta
-from typing import Any, List, Optional, Union
+from typing import Any, AsyncIterator, List, Optional, Union
 
+from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 from aiokafka.admin import AIOKafkaAdminClient
 
-from probirka._probes import ProbeBase
-from probirka._probes._common import ClientOrFactory, require_exactly_one, resolve
+from probirka._probes._client_base import ClientProbeBase
+from probirka._probes._common import ClientOrFactory, require_exactly_one
 
 
-class KafkaAiokafkaProbe(ProbeBase):
+class KafkaAiokafkaProbe(ClientProbeBase):
     """
     Check Kafka availability with `aiokafka <https://github.com/aio-libs/aiokafka>`_.
 
@@ -42,23 +44,24 @@ class KafkaAiokafkaProbe(ProbeBase):
         self._client = client
         self._bootstrap_servers = bootstrap_servers
 
-    @staticmethod
-    async def _fetch_metadata(client: Any) -> None:
-        if hasattr(client, 'describe_cluster'):  # AIOKafkaAdminClient
-            await client.describe_cluster()
-            return
-        # AIOKafkaProducer exposes the low-level client as ``client``, AIOKafkaConsumer as ``_client``
-        low_level = getattr(client, 'client', None) or getattr(client, '_client')  # noqa: B009
-        await low_level.fetch_all_metadata()
-
-    async def _check(self) -> Optional[bool]:
-        if self._client is not None:
-            await self._fetch_metadata(resolve(self._client))
-            return True
+    @asynccontextmanager
+    async def _temporary_client(self) -> AsyncIterator[Any]:
         admin = AIOKafkaAdminClient(bootstrap_servers=self._bootstrap_servers)
-        await admin.start()
         try:
-            await admin.describe_cluster()
+            await admin.start()
+            yield admin
         finally:
             await admin.close()
-        return True
+
+    async def _check_client(self, client: Any) -> None:
+        # every branch fetches cluster metadata through a public API
+        if isinstance(client, AIOKafkaAdminClient):
+            await client.describe_cluster()
+        elif isinstance(client, AIOKafkaProducer):
+            await client.client.fetch_all_metadata()
+        elif isinstance(client, AIOKafkaConsumer):
+            await client.topics()
+        else:
+            raise TypeError(
+                f'expected AIOKafkaProducer, AIOKafkaConsumer or AIOKafkaAdminClient, got {type(client).__name__}'
+            )

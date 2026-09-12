@@ -1,8 +1,8 @@
-from typing import Any, Optional
+from asyncio import get_running_loop
+from typing import Any
 
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from probirka._probes._common import only_set
 from probirka._probes._mongo_base import MongoProbeBase
 
 
@@ -14,11 +14,10 @@ class MongoMotorProbe(MongoProbeBase):
     or on a short-lived client created from ``url``.
     """
 
-    def _new_client(self, url: str, timeout: Optional[int]) -> Any:
-        return AsyncIOMotorClient(
-            url,
-            **only_set(serverSelectionTimeoutMS=timeout * 1000 if timeout is not None else None),
-        )
+    def _new_client(self, url: str, **kwargs: Any) -> Any:
+        return AsyncIOMotorClient(url, **kwargs)
 
     async def _close_client(self, client: Any) -> None:
-        client.close()  # synchronous in Motor
+        # Motor's close() is the synchronous PyMongo close(): it ends server sessions over the
+        # network, so it must not run on the event loop thread
+        await get_running_loop().run_in_executor(None, client.close)

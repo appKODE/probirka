@@ -1,13 +1,14 @@
+from contextlib import asynccontextmanager
 from datetime import timedelta
-from typing import Any, Optional, Union
+from typing import Any, AsyncIterator, Optional, Union
 
 import asyncpg
 
-from probirka._probes import ProbeBase
-from probirka._probes._common import ClientOrFactory, require_exactly_one, resolve
+from probirka._probes._client_base import ClientProbeBase
+from probirka._probes._common import ClientOrFactory, require_exactly_one
 
 
-class PostgresAsyncpgProbe(ProbeBase):
+class PostgresAsyncpgProbe(ClientProbeBase):
     """
     Check PostgreSQL availability with `asyncpg <https://github.com/MagicStack/asyncpg>`_.
 
@@ -40,13 +41,13 @@ class PostgresAsyncpgProbe(ProbeBase):
         self._client = client
         self._dsn = dsn
 
-    async def _check(self) -> Optional[bool]:
-        if self._client is not None:
-            await resolve(self._client).fetchval('SELECT 1')
-            return True
+    @asynccontextmanager
+    async def _temporary_client(self) -> AsyncIterator[Any]:
         conn = await asyncpg.connect(self._dsn)
         try:
-            await conn.fetchval('SELECT 1')
+            yield conn
         finally:
             await conn.close()
-        return True
+
+    async def _check_client(self, client: Any) -> None:
+        await client.fetchval('SELECT 1')

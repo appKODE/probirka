@@ -1,13 +1,14 @@
+from contextlib import asynccontextmanager
 from datetime import timedelta
-from typing import Any, Optional, Union
+from typing import Any, AsyncIterator, Optional, Union
 
 import aio_pika
 
-from probirka._probes import ProbeBase
-from probirka._probes._common import ClientOrFactory, ProbeFailure, require_exactly_one, resolve
+from probirka._probes._client_base import ClientProbeBase
+from probirka._probes._common import ClientOrFactory, ProbeFailure, require_exactly_one
 
 
-class RabbitmqAiopikaProbe(ProbeBase):
+class RabbitmqAiopikaProbe(ClientProbeBase):
     """
     Check RabbitMQ availability with `aio-pika <https://github.com/mosquito/aio-pika>`_.
 
@@ -40,20 +41,17 @@ class RabbitmqAiopikaProbe(ProbeBase):
         self._client = client
         self._url = url
 
-    @staticmethod
-    async def _open_channel(connection: Any) -> None:
-        if connection.is_closed:
-            raise ProbeFailure('connection is closed')
-        channel = await connection.channel()
-        await channel.close()
-
-    async def _check(self) -> Optional[bool]:
-        if self._client is not None:
-            await self._open_channel(resolve(self._client))
-            return True
+    @asynccontextmanager
+    async def _temporary_client(self) -> AsyncIterator[Any]:
+        # not ``connect_robust``: a probe must fail fast instead of reconnecting
         connection = await aio_pika.connect(self._url)
         try:
-            await self._open_channel(connection)
+            yield connection
         finally:
             await connection.close()
-        return True
+
+    async def _check_client(self, client: Any) -> None:
+        if client.is_closed:
+            raise ProbeFailure('connection is closed')
+        channel = await client.channel()
+        await channel.close()
