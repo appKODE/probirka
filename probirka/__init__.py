@@ -1,4 +1,5 @@
 from importlib import import_module
+from importlib.util import find_spec
 from typing import TYPE_CHECKING, Any, Dict, List, Tuple
 
 from probirka._probes import CallableProbe, Probe, ProbeBase
@@ -32,21 +33,6 @@ __description__ = (
     'with built-in probes and integrations for popular HTTP frameworks.'
 )
 
-# Names that need no third-party package. The lazily resolved names below are deliberately
-# not listed here, so ``from probirka import *`` works with nothing but probirka installed.
-__all__ = [
-    'CallableProbe',
-    'ClientOrFactory',
-    'MissingDependencyError',
-    'Probe',
-    'ProbeBase',
-    'ProbeFailure',
-    'ProbeResult',
-    'Probirka',
-    'ProbirkaResult',
-    'TcpProbe',
-]
-
 
 class MissingDependencyError(ImportError):
     """
@@ -77,6 +63,31 @@ _LAZY: Dict[str, Tuple[str, str, str]] = {
 }
 
 
+def _installed(import_name: str) -> bool:
+    try:
+        return find_spec(import_name) is not None
+    except ImportError:
+        return False
+
+
+# Names that need no third-party package, plus the lazily resolved names whose package is
+# installed. So ``from probirka import *`` brings the adapters and probes you can actually use
+# and still works with nothing but probirka installed.
+__all__ = [
+    'CallableProbe',
+    'ClientOrFactory',
+    'MissingDependencyError',
+    'Probe',
+    'ProbeBase',
+    'ProbeFailure',
+    'ProbeResult',
+    'Probirka',
+    'ProbirkaResult',
+    'TcpProbe',
+]
+__all__ += [name for name, (_, import_name, _) in sorted(_LAZY.items()) if _installed(import_name)]
+
+
 def __getattr__(name: str) -> Any:
     try:
         module_name, import_name, package = _LAZY[name]
@@ -98,4 +109,4 @@ def __getattr__(name: str) -> Any:
 
 
 def __dir__() -> List[str]:
-    return sorted(set(globals()) | set(__all__) | set(_LAZY))
+    return sorted(set(globals()) | set(__all__))

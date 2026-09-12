@@ -1,3 +1,4 @@
+import importlib.util
 import subprocess
 import sys
 import textwrap
@@ -42,8 +43,9 @@ SCRIPT = textwrap.dedent(
     from probirka import *  # noqa: F403  -- must not touch lazy names
     from probirka import TcpProbe, ProbeFailure, ProbeBase, Probirka
 
-    assert 'RedisProbe' in dir(probirka)
-    assert 'make_fastapi_endpoint' in dir(probirka)
+    # nothing is installed, so no lazy name is advertised
+    assert not set(probirka._LAZY) & set(probirka.__all__)
+    assert not set(probirka._LAZY) & set(dir(probirka))
 
     for name in probirka._LAZY:
         try:
@@ -103,8 +105,18 @@ def test_broken_install_keeps_the_original_error(tmp_path: Path) -> None:
     assert proc.stdout.strip() == 'OK'
 
 
-def test_lazy_names_are_not_in_all() -> None:
-    assert not set(probirka._LAZY) & set(probirka.__all__)
+def test_all_lists_lazy_names_whose_package_is_installed() -> None:
+    for name, (_, import_name, _) in probirka._LAZY.items():
+        installed = importlib.util.find_spec(import_name) is not None
+        assert (name in probirka.__all__) is installed, name
+        assert (name in dir(probirka)) is installed, name
+
+
+def test_star_import_brings_available_adapters_and_probes() -> None:
+    namespace: dict = {}  # type: ignore[type-arg]
+    exec('from probirka import *', namespace)  # noqa: S102
+    for name in probirka.__all__:
+        assert name in namespace, name
 
 
 def test_unknown_attribute_raises_attribute_error() -> None:
