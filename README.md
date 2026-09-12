@@ -7,435 +7,59 @@ Python 3 library to write simple asynchronous health checks (probes).
 [![PyPI](https://img.shields.io/pypi/dm/probirka.svg)](https://pypi.python.org/pypi/probirka)
 [![Coverage Status](https://coveralls.io/repos/github/appKODE/probirka/badge.svg?branch=main)](https://coveralls.io/github/appKODE/probirka?branch=main)
 
-## Overview
-
-Probirka is a lightweight and flexible Python library for implementing asynchronous health checks in your applications. It provides a simple yet powerful API for monitoring the health of various components and services, making it ideal for microservices architectures, containerized applications, and distributed systems.
+Documentation: https://appkode.github.io/probirka/
 
 ## Installation
-
-Install Probirka using pip:
 
 ```shell
 pip install probirka
 ```
 
+Probirka has no dependencies. Ready-made probes and framework adapters use client libraries that you install alongside (`redis`, `asyncpg`, `fastapi`, ...); a missing one raises an `ImportError` naming the package.
+
 ## Quick Start
 
-Here is a simple example of how to use Probirka to create health checks using decorators:
-
 ```python
 import asyncio
-from dataclasses import asdict
-from pprint import pprint
 from probirka import Probirka
+from probirka.probes import TcpProbe
 
-# Create a Probirka instance
-probirka = Probirka()
-
-# Add some custom information
+probirka = Probirka(success_ttl=30)
 probirka.add_info("version", "1.0.0")
-probirka.add_info("environment", "production")
 
-# Define health checks using decorators
-@probirka.add(name="database")  # This probe will always run
+@probirka.add(name="database", timeout=2)
 async def check_database():
-    # Simulate a database check
-    await asyncio.sleep(1)
     return True
 
-@probirka.add(groups=["cache"])  # This probe will only run when cache group is requested
-async def check_cache():
-    # Simulate a cache check
-    await asyncio.sleep(1)
-    return False  # Simulate a failed check
-
-@probirka.add(groups=["external"])  # This probe will only run when external group is requested
+@probirka.add(groups=["external"])  # runs only when the group is requested
 def check_external_service():
-    # Synchronous check example
     return True
 
-async def main():
-    print("-"*64)
-    # Run only required probes (without groups)
-    basic_results = await probirka.run()
-    print("Basic check results:")
-    print()
-    pprint(asdict(basic_results))
-
-    print("-"*64)
-    # Run only cache group probes
-    cache_results = await probirka.run(with_groups="cache", skip_required=True)
-    print("Cache check results:")
-    print()
-    pprint(asdict(cache_results))
-
-    print("-"*64)
-    # Run required probes + multiple groups
-    full_results = await probirka.run(with_groups=["cache", "external"])
-    print("Full check results:")
-    print()
-    pprint(asdict(full_results))
-
-if __name__ == "__main__":
-    asyncio.run(main())
-```
-
-Output:
-
-```python
-----------------------------------------------------------------
-Basic check results:
-
-{'checks': [{'cached': None,
-             'elapsed': datetime.timedelta(seconds=1, microseconds=1430),
-             'error': None,
-             'info': None,
-             'name': 'database',
-             'ok': True,
-             'started_at': datetime.datetime(2025, 4, 2, 9, 41, 53, 417942)}],
- 'elapsed': datetime.timedelta(seconds=1, microseconds=1601),
- 'error': None,
- 'info': {'environment': 'production', 'version': '1.0.0'},
- 'ok': True,
- 'started_at': datetime.datetime(2025, 4, 2, 9, 41, 53, 417898)}
-----------------------------------------------------------------
-Cache check results:
-
-{'checks': [{'cached': None,
-             'elapsed': datetime.timedelta(seconds=1, microseconds=1468),
-             'error': None,
-             'info': None,
-             'name': 'check_cache',
-             'ok': False,
-             'started_at': datetime.datetime(2025, 4, 2, 9, 41, 54, 420261)}],
- 'elapsed': datetime.timedelta(seconds=1, microseconds=1776),
- 'error': None,
- 'info': {'environment': 'production', 'version': '1.0.0'},
- 'ok': False,
- 'started_at': datetime.datetime(2025, 4, 2, 9, 41, 54, 420133)}
-----------------------------------------------------------------
-Full check results:
-
-{'checks': [{'cached': None,
-             'elapsed': datetime.timedelta(seconds=1, microseconds=1570),
-             'error': None,
-             'info': None,
-             'name': 'database',
-             'ok': True,
-             'started_at': datetime.datetime(2025, 4, 2, 9, 41, 55, 423083)},
-            {'cached': None,
-             'elapsed': datetime.timedelta(seconds=1, microseconds=1597),
-             'error': None,
-             'info': None,
-             'name': 'check_cache',
-             'ok': False,
-             'started_at': datetime.datetime(2025, 4, 2, 9, 41, 55, 423173)},
-            {'cached': None,
-             'elapsed': datetime.timedelta(microseconds=25),
-             'error': None,
-             'info': None,
-             'name': 'check_external_service',
-             'ok': True,
-             'started_at': datetime.datetime(2025, 4, 2, 9, 41, 55, 423245)}],
- 'elapsed': datetime.timedelta(seconds=1, microseconds=2136),
- 'error': None,
- 'info': {'environment': 'production', 'version': '1.0.0'},
- 'ok': False,
- 'started_at': datetime.datetime(2025, 4, 2, 9, 41, 55, 422905)}
-```
-
-Alternatively, you can create custom probes by inheriting from the `ProbeBase` class:
-
-```python
-from probirka import Probirka, ProbeBase
-import asyncio
-
-class DatabaseProbe(ProbeBase):
-    async def _check(self):
-        # Simulate a database check
-        await asyncio.sleep(1)
-        return True
-
-class CacheProbe(ProbeBase):
-    async def _check(self):
-        # Simulate a cache check
-        await asyncio.sleep(1)
-        return False  # Simulate a failed check
+probirka.add_probes(TcpProbe("smtp.example.com", 25, name="smtp", timeout=2))
 
 async def main():
-    probirka = Probirka()
-    probirka.add_probes(DatabaseProbe(), CacheProbe())
-    probirka.add_info("version", "1.0.0")
-    probirka.add_info("environment", "production")
-    results = await probirka.run()
-    print(results)
+    result = await probirka.run(with_groups=["external"], timeout=5)
+    print(result.ok, result.to_dict())
 
-if __name__ == "__main__":
-    asyncio.run(main())
+asyncio.run(main())
 ```
+
+Probes return `True`/`None` on success and `False` on failure; exceptions and timeouts are reported in `error`. Custom probes subclass `ProbeBase` and implement `async def _check(self)`.
 
 ## Ready-made Probes
 
-`probirka.probes` ships probes for common dependencies. They are ordinary `ProbeBase` subclasses; `probirka` itself stays dependency-free, so install the client library you need alongside (a missing one raises an `ImportError` that names the package):
+`probirka.probes`: `TcpProbe`, `PostgresAsyncpgProbe`, `RedisProbe`, `HttpHttpxProbe`, `HttpHttpx2Probe`, `HttpAiohttpProbe`, `KafkaAiokafkaProbe`, `RabbitmqAiopikaProbe`, `MongoPymongoProbe`, `MongoMotorProbe`. Each takes an existing client of your application (or a function returning it) or a connection string. See [the docs](https://appkode.github.io/probirka/probes.html).
 
-| Probe | Requires | Check |
-|---|---|---|
-| `TcpProbe` | – | TCP connect to `host:port` |
-| `PostgresAsyncpgProbe` | `asyncpg` | `SELECT 1` |
-| `RedisProbe` | `redis` | `PING` |
-| `HttpHttpxProbe` / `HttpHttpx2Probe` / `HttpAiohttpProbe` | `httpx` / `httpx2` / `aiohttp` | request, expected status code |
-| `KafkaAiokafkaProbe` | `aiokafka` | fetch cluster metadata |
-| `RabbitmqAiopikaProbe` | `aio-pika` | open a channel |
-| `MongoPymongoProbe` / `MongoMotorProbe` | `pymongo>=4.9` / `motor` | `ping` command |
+## Framework Adapters
 
-Each probe takes either an existing client of your application (or a zero-argument function returning it, for clients created later in a lifespan) or a connection string; with a connection string a short-lived connection is opened on every check:
-
-```python
-from probirka import Probirka
-from probirka.probes import HttpHttpxProbe, PostgresAsyncpgProbe, RedisProbe, TcpProbe
-
-probirka = Probirka()
-probirka.add_probes(
-    PostgresAsyncpgProbe(lambda: app.state.pool, name="postgres", timeout=2),  # reuse the app's pool
-    RedisProbe(url="redis://cache:6379/0", name="redis", timeout=1),          # connect per check
-    HttpHttpxProbe("https://api.example.com/health", name="api", expected_status={200, 204}),
-    TcpProbe("smtp.example.com", 25, name="smtp"),
-)
-```
-
-## Advanced Usage
-
-### Creating Custom Probes
-
-You can create custom probes by inheriting from the `ProbeBase` class:
-
-```python
-from probirka import ProbeBase
-import asyncio
-
-class CustomProbe(ProbeBase):
-    def __init__(self, name="CustomProbe"):
-        super().__init__(name=name)
-        
-    async def _check(self):
-        # Implement your health check logic here
-        return True
-```
-
-### Adding Metadata to Probes
-
-You can add metadata to your probes:
-
-```python
-from probirka import ProbeBase
-import asyncio
-
-class DatabaseProbe(ProbeBase):
-    async def _check(self):
-        await asyncio.sleep(1)
-        self.add_info("connection_pool_size", 10)
-        self.add_info("active_connections", 5)
-        return True
-```
-
-The added information will be included in the probe results and can be accessed through the `info` field of each probe result. This is useful for providing additional context about the probe's state or performance metrics.
-
-### Grouping Probes
-
-Probes can be organized into required and optional groups. Probes without groups are always executed, while probes with groups are only executed when explicitly requested:
-
-```python
-import asyncio
-from probirka import Probirka
-
-# Create a Probirka instance
-probirka = Probirka()
-
-# Required probe (will always run)
-@probirka.add(name="database")
-async def check_database():
-    await asyncio.sleep(1)
-    return True
-
-# Optional probes (will only run when their groups are requested)
-@probirka.add(groups=["cache"])
-async def check_cache():
-    await asyncio.sleep(1)
-    return True
-
-@probirka.add(groups=["external"])
-async def check_external_service():
-    return True
-
-async def main():
-    # Run only required probes (database)
-    basic_results = await probirka.run()
-    print("Basic check results:", basic_results)
-
-    # Run required probes + cache group
-    cache_results = await probirka.run(with_groups=["cache"])
-    print("Cache check results:", cache_results)
-
-    # Run required probes + multiple groups
-    full_results = await probirka.run(with_groups=["cache", "external"])
-    print("Full check results:", full_results)
-
-if __name__ == "__main__":
-    asyncio.run(main())
-```
-
-### Setting Timeouts
-
-You can set timeouts for individual probes:
-
-```python
-from probirka import ProbeBase
-import asyncio
-
-class SlowProbe(ProbeBase):
-    async def _check(self):
-        await asyncio.sleep(2)  # This will timeout
-        return True
-
-probe = SlowProbe(timeout=1)  # 1 second timeout
-```
-
-When a probe times out, `ok` is `False` and `error` is set to `TimeoutError: probe timed out after 1s`. Synchronous probes are executed in the event loop's default executor, so they do not block the loop and the timeout applies to them as well; the worker thread keeps running until the function returns, only the wait is cancelled.
-
-You can also set an overall timeout for `Probirka.run()`. It never raises: probes that did not finish in time are reported as failed with a `TimeoutError` message, finished probes keep their real results, and the whole `ProbirkaResult` gets `ok=False` with `error` set:
-
-```python
-results = await probirka.run(timeout=5)
-if not results.ok:
-    print(results.error)  # "TimeoutError: probirka run timed out after 5s" when the timeout was hit
-```
-
-### Caching Results
-
-```python
-from typing import Optional
-from probirka import Probirka, ProbeBase
-import asyncio
-
-# Create a Probirka instance with global caching settings
-probirka = Probirka(success_ttl=60, failed_ttl=10)  # Cache successful results for 60s, failed for 10s
-
-# Add a probe with custom caching settings
-@probirka.add(success_ttl=300)  # Cache successful results for 5 minutes
-async def check_database():
-    # Simulate a database check
-    await asyncio.sleep(1)
-    return True
-
-# Or create a custom probe with caching
-class DatabaseProbe(ProbeBase):
-    def __init__(self, success_ttl: Optional[int] = None, failed_ttl: Optional[int] = None):
-        super().__init__(success_ttl=success_ttl, failed_ttl=failed_ttl)
-        
-    async def _check(self) -> bool:
-        # Simulate a database check
-        await asyncio.sleep(1)
-        return True
-```
-
-The caching mechanism works as follows:
-- If `success_ttl` is set, successful results will be cached for the specified number of seconds
-- If `failed_ttl` is set, failed results will be cached for the specified number of seconds
-- If both are set to `None` (default), no caching will be performed
-- Global settings in `Probirka` instance can be overridden by individual probe settings
-
-## Integration Examples
-
-The adapters live in `probirka.ext` and are thin wrappers over `Probirka.run()`; the framework itself must be installed. For backward compatibility they are also importable from `probirka` directly.
-
-Every integration answers `GET /health` with `200` when all checks pass and `500` otherwise (both codes are configurable) and returns `ProbirkaResult.to_dict()` as JSON:
-
-```json
-{
-  "ok": true,
-  "started_at": "2025-04-02T09:41:53.417898",
-  "elapsed": 1.0016,
-  "info": {"version": "1.0.0"},
-  "checks": [
-    {
-      "name": "database",
-      "ok": true,
-      "cached": null,
-      "started_at": "2025-04-02T09:41:53.417942",
-      "elapsed": 1.00143,
-      "info": null,
-      "error": null
-    }
-  ],
-  "error": null
-}
-```
-
-`started_at` is an ISO 8601 timestamp, `elapsed` is the duration in seconds. Pass `return_results=False` to get an empty body with just the status code.
-
-### FastAPI Integration
+`probirka.ext.fastapi`, `probirka.ext.aiohttp` and `probirka.ext.django` turn a `Probirka` instance into a `/health` endpoint: `200` when all checks pass, `500` otherwise, body is `ProbirkaResult.to_dict()` as JSON.
 
 ```python
 from fastapi import FastAPI
-from probirka import Probirka
 from probirka.ext.fastapi import make_fastapi_endpoint
 
 app = FastAPI()
-probirka_instance = Probirka()
-
-# Define some health checks
-@probirka_instance.add(name="api")
-async def check_api():
-    return True
-
-
-# Create and add the endpoint
-fastapi_endpoint = make_fastapi_endpoint(probirka_instance)
-app.add_api_route("/health", fastapi_endpoint)
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+app.add_api_route("/health", make_fastapi_endpoint(probirka))
 ```
 
-### aiohttp Integration
-
-```python
-from aiohttp import web
-from probirka import Probirka
-from probirka.ext.aiohttp import make_aiohttp_endpoint
-
-app = web.Application()
-probirka_instance = Probirka()
-
-# Define some health checks
-@probirka_instance.add(name="api")
-async def check_api():
-    return True
-
-# Create and add the endpoint
-aiohttp_endpoint = make_aiohttp_endpoint(probirka_instance)
-app.router.add_get('/health', aiohttp_endpoint)
-
-if __name__ == '__main__':
-    web.run_app(app)
-```
-
-### Django Integration
-
-```python
-# urls.py
-from django.urls import path
-from probirka import Probirka
-from probirka.ext.django import make_django_view
-
-probirka_instance = Probirka()
-
-@probirka_instance.add(name="api")
-async def check_api():
-    return True
-
-urlpatterns = [
-    path("health", make_django_view(probirka_instance)),
-]
-```
+See [the docs](https://appkode.github.io/probirka/integration.html) for aiohttp and Django.
