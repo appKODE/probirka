@@ -1,7 +1,7 @@
 Welcome to Probirka's documentation!
 ====================================
 
-Probirka is a Python 3 library for writing simple asynchronous health checks (probes).
+Probirka is a framework-agnostic library for running health probes in Python applications, with built-in probes and integrations for popular HTTP frameworks.
 
 `GitHub Repository <https://github.com/appKODE/probirka>`_
 

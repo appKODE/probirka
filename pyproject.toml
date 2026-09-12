@@ -1,7 +1,7 @@
 [project]
 name = "probirka"
 version = "0.0.0"
-description = "Python 3 library to write simple asynchronous health checks (probes)"
+description = "Framework-agnostic library for running health probes in Python applications, with built-in probes and integrations for popular HTTP frameworks."
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = []

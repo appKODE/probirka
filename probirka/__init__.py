@@ -16,7 +16,7 @@ __url__ = 'https://github.com/appKODE/probirka'
 __author__ = 'KODE'
 __author_email__ = 'slurm@kode.ru'
 __license__ = 'MIT'
-__description__ = 'A health check library for Python applications'
+__description__ = 'Framework-agnostic library for running health probes in Python applications, with built-in probes and integrations for popular HTTP frameworks.'
 __all__ = [
     'CallableProbe',
     'Probe',

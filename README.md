@@ -1,6 +1,6 @@
 # PROB🧪RKA
 
-Python 3 library to write simple asynchronous health checks (probes).
+Framework-agnostic library for running health probes in Python applications, with built-in probes and integrations for popular HTTP frameworks.
 
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![PyPI](https://img.shields.io/pypi/v/probirka.svg)](https://pypi.python.org/pypi/probirka)
