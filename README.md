@@ -34,7 +34,7 @@ async def check_database():
 def check_external_service():
     return True
 
-probirka.add_probes(TcpProbe("smtp.example.com", 25, name="smtp", timeout=2))
+probirka.add_probes(TcpProbe("example.com", 443, name="tcp", timeout=2))
 
 async def main():
     result = await probirka.run(with_groups=["external"], timeout=5)
@@ -47,11 +47,11 @@ Probes return `True`/`None` on success and `False` on failure; exceptions and ti
 
 ## Ready-made Probes
 
-Importable from `probirka`: `TcpProbe`, `PostgresAsyncpgProbe`, `RedisProbe`, `HttpHttpxProbe`, `HttpHttpx2Probe`, `HttpAiohttpProbe`, `KafkaAiokafkaProbe`, `RabbitmqAiopikaProbe`, `MongoPymongoProbe`, `MongoMotorProbe`. Each takes an existing client of your application (or a function returning it) or a connection string. See [the docs](https://appkode.github.io/probirka/probes.html).
+Importable from `probirka`: `TcpProbe` (no dependencies), `PostgresAsyncpgProbe`, `RedisProbe`, `HttpHttpxProbe`, `HttpHttpx2Probe`, `HttpAiohttpProbe`, `KafkaAiokafkaProbe`, `RabbitmqAiopikaProbe`, `MongoPymongoProbe`, `MongoMotorProbe`. Each takes an existing client of your application (or a function returning it) or a connection string. See [the docs](https://appkode.github.io/probirka/probes.html).
 
 ## Framework Adapters
 
-`make_fastapi_endpoint`, `make_aiohttp_endpoint` and `make_django_view` turn a `Probirka` instance into a `/health` endpoint: `200` when all checks pass, `500` otherwise, body is `ProbirkaResult.to_dict()` as JSON.
+`make_fastapi_endpoint`, `make_aiohttp_endpoint` and `make_django_view` turn a `Probirka` instance into a `/health` endpoint: `200` when all checks pass, `500` otherwise (both configurable), body is `ProbirkaResult.to_dict()` as JSON or empty with `return_results=False`.
 
 ```python
 from fastapi import FastAPI
