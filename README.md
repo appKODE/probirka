@@ -1,10 +1,14 @@
 # PROB🧪RKA
 
+[![PyPI](https://img.shields.io/pypi/v/probirka.svg)](https://pypi.python.org/pypi/probirka)
+[![Python](https://img.shields.io/pypi/pyversions/probirka.svg)](https://pypi.python.org/pypi/probirka)
+[![PyPI](https://img.shields.io/pypi/dm/probirka.svg)](https://pypi.python.org/pypi/probirka)
+[![Coverage Status](https://coveralls.io/repos/github/appKODE/probirka/badge.svg?branch=main)](https://coveralls.io/github/appKODE/probirka?branch=main)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+
 Framework-agnostic library for running health probes in Python applications.
 
-Probirka provides a small async engine for running checks concurrently, handling timeouts, caching results and exposing them through HTTP frameworks.
-
-It also includes ready-made probes for common infrastructure such as PostgreSQL, Redis, HTTP, Kafka, RabbitMQ and MongoDB.
+A small async engine that runs checks concurrently, handles timeouts, caches results and exposes them over HTTP, with ready-made probes for common infrastructure such as PostgreSQL, Redis, HTTP, Kafka, RabbitMQ and MongoDB.
 
 * 🚫 no runtime dependencies in the core
 * ⚡ concurrent async execution
@@ -14,12 +18,6 @@ It also includes ready-made probes for common infrastructure such as PostgreSQL,
 * 🔌 ready-made probes for common infrastructure
 * 🌐 FastAPI, aiohttp and Django adapters, plus a dependency-free ASGI app for everything else
 * 🐍 fully typed
-
-[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![PyPI](https://img.shields.io/pypi/v/probirka.svg)](https://pypi.python.org/pypi/probirka)
-[![PyPI](https://img.shields.io/pypi/dm/probirka.svg)](https://pypi.python.org/pypi/probirka)
-[![Python](https://img.shields.io/pypi/pyversions/probirka.svg)](https://pypi.python.org/pypi/probirka)
-[![Coverage Status](https://coveralls.io/repos/github/appKODE/probirka/badge.svg?branch=main)](https://coveralls.io/github/appKODE/probirka?branch=main)
 
 [Documentation](https://appkode.github.io/probirka/) · [Changelog](CHANGELOG.md)
 
@@ -44,27 +42,6 @@ ImportError: RedisProbe requires the 'redis' package, install it with: pip insta
 ```
 
 See the [documentation](https://appkode.github.io/probirka/probes.html) for the complete list of probes and their dependencies.
-
-## How it works
-
-A **probe** is a single check of some application dependency or subsystem.
-
-`Probirka` is responsible for running probes and aggregating their results into a single health-check result.
-
-```text
-                 Probirka
-                    │
-        ┌───────────┼───────────┐
-        ▼           ▼           ▼
-    PostgreSQL     Redis       HTTP
-      probe        probe       probe
-        │           │           │
-        └───────────┼───────────┘
-                    ▼
-             ProbirkaResult
-```
-
-Probes are independent and can be implemented as simple functions or as reusable `Probe` classes.
 
 ## Quick start
 
@@ -101,7 +78,24 @@ asyncio.run(main())
 
 Probes are executed concurrently. Synchronous functions are supported too — they run in the event loop's default executor, so they neither block the loop nor escape their timeout.
 
-## Probe outcomes
+## How it works
+
+A **probe** is a single check of some application dependency or subsystem. `Probirka` runs probes and aggregates their results into a single health-check result.
+
+```text
+                 Probirka
+                    │
+        ┌───────────┼───────────┐
+        ▼           ▼           ▼
+    PostgreSQL     Redis       HTTP
+      probe        probe       probe
+        │           │           │
+        └───────────┼───────────┘
+                    ▼
+             ProbirkaResult
+```
+
+Probes are independent and can be implemented as simple functions or as reusable `Probe` classes.
 
 A probe never crashes the health check. Whatever it does is turned into a `ProbeResult`:
 
@@ -139,8 +133,6 @@ A failing check therefore looks like this:
 The top-level `ok` is `True` only when every probe that ran passed.
 
 ## Ready-made probes
-
-Probirka includes probes for common infrastructure.
 
 | Probe                  | Dependency | What it checks                                             |
 | ---------------------- | ---------- | ---------------------------------------------------------- |
@@ -191,17 +183,13 @@ Every probe that talks to a service takes either an existing client or a connect
 * **an existing client** (first positional argument): the probe reuses your pool and its configuration and never closes it;
 * **a connection string** (`dsn`, `url`, `bootstrap_servers`): the probe opens a short-lived connection for each check and closes it afterwards.
 
-When the client is created after the probes are registered — in a FastAPI lifespan, an aiohttp startup signal — pass a zero-argument function instead of the client, as in the `lambda: app.state.pool` above. It is called on every check.
-
-This makes it possible to reuse application connection pools instead of creating additional connections just for health checks.
+When the client is created after the probes are registered — in a FastAPI lifespan, an aiohttp startup signal — pass a zero-argument function instead of the client, as in the `lambda: app.state.pool` above. It is called on every check. This makes it possible to reuse application connection pools instead of creating additional connections just for health checks.
 
 A probe that reaches the service but does not like the answer raises `ProbeFailure`, which lands in `error` as, for example, `'ProbeFailure: unexpected status 503'`.
 
 ## Custom probes
 
-Ready-made probes are just regular `Probe` implementations.
-
-For application-specific checks, use a function:
+Ready-made probes are just regular `Probe` implementations. For application-specific checks, use a function:
 
 ```python
 @probirka.add(name='application')
@@ -240,9 +228,7 @@ class DatabaseProbe(ProbeBase):
 
 ## Groups
 
-Some checks may be too expensive or too slow to run on every health request.
-
-Put them into an optional group:
+Some checks may be too expensive or too slow to run on every health request. Put them into an optional group:
 
 ```python
 @probirka.add(
@@ -290,9 +276,7 @@ Groups that were never registered are ignored rather than reported as failures.
 
 ## Caching
 
-Health checks should not necessarily hit every dependency on every request.
-
-Probirka can cache successful and failed probe results independently:
+Health checks should not necessarily hit every dependency on every request. Probirka can cache successful and failed probe results independently:
 
 ```python
 probirka = Probirka(
@@ -338,46 +322,25 @@ This prevents one slow dependency from keeping the whole health check request op
 
 Probirka provides thin adapters for popular Python HTTP frameworks, and a generic ASGI application for everything else. All of them run the probes, map `ok` to a status code and return `ProbirkaResult.to_dict()` as JSON, so every endpoint answers in the same format.
 
-| Where it runs                            | Use                                                    |
-| ---------------------------------------- | ------------------------------------------------------ |
-| FastAPI                                  | `make_fastapi_endpoint`                                |
-| aiohttp                                  | `make_aiohttp_endpoint`                                |
-| Django                                   | `make_django_view`                                     |
-| Starlette, Litestar, Falcon, BlackSheep  | `make_asgi_app`                                        |
-| A port of its own                        | `make_asgi_app` served by uvicorn                      |
-| Sanic, Quart, Flask                      | `probirka.run()` from your own handler                 |
+| Where it runs                            | Use                                     |
+| ---------------------------------------- | --------------------------------------- |
+| FastAPI                                  | `make_fastapi_endpoint`                 |
+| aiohttp                                  | `make_aiohttp_endpoint`                 |
+| Django                                   | `make_django_view`                      |
+| Starlette, Litestar, Falcon, BlackSheep  | `make_asgi_app`                         |
+| A port of its own                        | `make_asgi_app` served by uvicorn       |
+| Sanic, Quart, Flask                      | `probirka.run()` from your own handler  |
 
-### Any ASGI framework
+Every factory takes the same keyword arguments:
 
-`make_asgi_app` returns a plain ASGI 3 application. It is the only integration with no third-party dependency at all, so it works on a bare `pip install probirka`:
-
-```python
-from starlette.applications import Starlette
-from starlette.routing import Route
-
-from probirka import Probirka, make_asgi_app
-
-probirka = Probirka()
-
-# add probes...
-
-app = Starlette(
-    routes=[
-        Route('/health', make_asgi_app(probirka), methods=['GET', 'HEAD']),
-    ],
-)
-```
-
-Mounting works too — `app.mount('/health', make_asgi_app(probirka))` in FastAPI, `asgi('/health', is_mount=True)(make_asgi_app(probirka))` in Litestar — and so does serving it separately:
-
-```bash
-uvicorn health:health_app --port 8081
-```
-
-Because a mounted app gets no help from the host router, it handles two things itself: the request path is ignored, and only `GET` and `HEAD` are served, everything else gets `405`.
-
-> [!WARNING]
-> Starlette's `Mount('/health', app)` answers on `/health/` and redirects the bare `/health` with a `307`. Kubernetes counts any status below 400 as success, so such a probe would report the service healthy without ever running the checks. Use `Route`, or point the probe at the trailing slash.
+| Argument         | Default | Meaning                                                |
+| ---------------- | ------- | ------------------------------------------------------ |
+| `timeout`        | `None`  | Overall timeout for the run, in seconds                |
+| `with_groups`    | `''`    | Optional groups to include                             |
+| `skip_required`  | `False` | Run only the requested groups                          |
+| `return_results` | `True`  | Return the result as JSON; `False` sends an empty body |
+| `success_code`   | `200`   | Status code when every probe passed                    |
+| `error_code`     | `500`   | Status code when at least one probe failed             |
 
 ### FastAPI
 
@@ -436,24 +399,41 @@ urlpatterns = [
 
 The Django view answers `GET` and `HEAD`; other methods get `405 Method Not Allowed`.
 
-### Options
+### Any ASGI framework
 
-Every factory takes the same keyword arguments:
+`make_asgi_app` returns a plain ASGI 3 application. It is the only integration with no third-party dependency at all, so it works on a bare `pip install probirka`:
 
-| Argument         | Default | Meaning                                                     |
-| ---------------- | ------- | ----------------------------------------------------------- |
-| `timeout`        | `None`  | Overall timeout for the run, in seconds                      |
-| `with_groups`    | `''`    | Optional groups to include                                   |
-| `skip_required`  | `False` | Run only the requested groups                                |
-| `return_results` | `True`  | Return the result as JSON; `False` sends an empty body       |
-| `success_code`   | `200`   | Status code when every probe passed                          |
-| `error_code`     | `500`   | Status code when at least one probe failed                   |
+```python
+from starlette.applications import Starlette
+from starlette.routing import Route
+
+from probirka import Probirka, make_asgi_app
+
+probirka = Probirka()
+
+# add probes...
+
+app = Starlette(
+    routes=[
+        Route('/health', make_asgi_app(probirka), methods=['GET', 'HEAD']),
+    ],
+)
+```
+
+Mounting works too — `app.mount('/health', make_asgi_app(probirka))` in FastAPI, `asgi('/health', is_mount=True)(make_asgi_app(probirka))` in Litestar — and so does serving it separately:
+
+```bash
+uvicorn health:health_app --port 8081
+```
+
+Because a mounted app gets no help from the host router, it handles two things itself: the request path is ignored, and only `GET` and `HEAD` are served, everything else gets `405`.
+
+> [!WARNING]
+> Starlette's `Mount('/health', app)` answers on `/health/` and redirects the bare `/health` with a `307`. Kubernetes counts any status below 400 as success, so such a probe would report the service healthy without ever running the checks. Use `Route`, or point the probe at the trailing slash.
 
 ## Results
 
-Results are represented by typed immutable data classes. `started_at` is timezone-aware in the local
-zone of the host, and `elapsed` is measured with a monotonic clock, so it is unaffected by clock
-adjustments:
+Results are typed immutable data classes. `started_at` is timezone-aware in the local zone of the host, and `elapsed` is measured with a monotonic clock, so it is unaffected by clock adjustments:
 
 ```python
 result = await probirka.run()
@@ -470,21 +450,11 @@ for check in result.checks:
     )
 ```
 
-The result can be converted to a JSON-compatible dictionary:
-
-```python
-data = result.to_dict()
-```
-
-This makes the same result format usable from custom integrations, HTTP endpoints and monitoring systems.
+`result.to_dict()` converts it to a JSON-compatible dictionary, which is what every HTTP integration returns and what monitoring systems consume.
 
 ## Why Probirka?
 
-Probirka deliberately keeps the core small.
-
-It does not try to manage connections, discover services or prescribe how your application should be structured.
-
-Instead, it provides three things:
+Probirka deliberately keeps the core small. It does not try to manage connections, discover services or prescribe how your application should be structured. Instead, it provides three things:
 
 1. **Probe implementations** — checks for your dependencies.
 2. **Execution engine** — concurrency, timeouts, caching and groups.
