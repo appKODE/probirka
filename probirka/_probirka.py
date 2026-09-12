@@ -1,10 +1,16 @@
+from __future__ import annotations
+
 from asyncio import ensure_future, gather, wait
 from collections import defaultdict
-from datetime import datetime, timedelta
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from collections.abc import Callable, Sequence
+from datetime import UTC, datetime, timedelta
+from time import monotonic
+from typing import Any, TypeVar
 
-from probirka._probes import CallableProbe, Probe
+from probirka._probes import CallableProbe, Probe, ProbeCallable
 from probirka._results import ProbirkaResult, ProbeResult
+
+ProbeFuncT = TypeVar('ProbeFuncT', bound=ProbeCallable)
 
 
 class Probirka:
@@ -14,8 +20,8 @@ class Probirka:
 
     def __init__(
         self,
-        success_ttl: Optional[Union[int, timedelta]] = None,
-        failed_ttl: Optional[Union[int, timedelta]] = None,
+        success_ttl: int | timedelta | None = None,
+        failed_ttl: int | timedelta | None = None,
     ) -> None:
         """
         Initialize the Probirka instance.
@@ -23,9 +29,9 @@ class Probirka:
         :param success_ttl: Default cache duration for successful results. If None, successful results are not cached.
         :param failed_ttl: Default cache duration for failed results. If None, failed results are not cached.
         """
-        self._required_probes: List[Probe] = []
-        self._optional_probes: Dict[str, List[Probe]] = defaultdict(list)
-        self._info: Optional[Dict[str, Any]] = None
+        self._required_probes: list[Probe] = []
+        self._optional_probes: dict[str, list[Probe]] = defaultdict(list)
+        self._info: dict[str, Any] | None = None
         self._success_ttl = timedelta(seconds=success_ttl) if isinstance(success_ttl, int) else success_ttl
         self._failed_ttl = timedelta(seconds=failed_ttl) if isinstance(failed_ttl, int) else failed_ttl
 
@@ -47,7 +53,7 @@ class Probirka:
     @property
     def info(
         self,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Get the information added to the health check result.
 
@@ -58,7 +64,7 @@ class Probirka:
     def add_probes(
         self,
         *probes: Probe,
-        groups: Union[str, List[str]] = '',
+        groups: str | Sequence[str] = '',
     ) -> None:
         """
         Add probes to the health check.
@@ -67,21 +73,20 @@ class Probirka:
         :param groups: Groups for optional probes. Probes without groups are required.
         """
         if groups:
-            if isinstance(groups, str):
-                groups = [groups]
-            for group in groups:
+            names = [groups] if isinstance(groups, str) else groups
+            for group in names:
                 self._optional_probes[group].extend(probes)
             return
         self._required_probes.extend(probes)
 
     def add(
         self,
-        name: Optional[str] = None,
-        timeout: Optional[int] = None,
-        groups: Union[str, List[str]] = '',
-        success_ttl: Optional[Union[int, timedelta]] = None,
-        failed_ttl: Optional[Union[int, timedelta]] = None,
-    ) -> Callable:
+        name: str | None = None,
+        timeout: int | None = None,
+        groups: str | Sequence[str] = '',
+        success_ttl: int | timedelta | None = None,
+        failed_ttl: int | timedelta | None = None,
+    ) -> Callable[[ProbeFuncT], ProbeFuncT]:
         """
         Decorator to add a callable as a probe.
 
@@ -95,7 +100,7 @@ class Probirka:
         :return: Decorated function
         """
 
-        def _wrapper(func: Callable) -> Any:
+        def _wrapper(func: ProbeFuncT) -> ProbeFuncT:
             self.add_probes(
                 CallableProbe(
                     func=func,
@@ -112,11 +117,12 @@ class Probirka:
 
     async def _inner_run(
         self,
-        with_groups: List[str],
+        with_groups: Sequence[str],
         skip_required: bool,
-        timeout: Optional[int],
+        timeout: int | None,
         started_at: datetime,
-    ) -> Tuple[List[ProbeResult], bool]:
+        start: float,
+    ) -> tuple[list[ProbeResult], bool]:
         """
         Run probes concurrently and gather results in registration order.
 
@@ -126,10 +132,11 @@ class Probirka:
         :param with_groups: Groups to run. Required probes run unless skip_required=True
         :param skip_required: Skip probes without groups
         :param timeout: Overall timeout in seconds, ``None`` to wait indefinitely
-        :param started_at: Start time of the whole run
+        :param started_at: Wall-clock start of the whole run, reported in results
+        :param start: ``time.monotonic()`` reading taken at the same moment, used to measure durations
         :return: Probe results and whether the overall timeout was hit
         """
-        probes: List[Probe] = [] if skip_required else list(self._required_probes)
+        probes: list[Probe] = [] if skip_required else list(self._required_probes)
         for group in with_groups:
             probes.extend(self._optional_probes.get(group, ()))
         if not probes:
@@ -143,8 +150,8 @@ class Probirka:
             await gather(*pending, return_exceptions=True)
 
         timeout_error = f'TimeoutError: probirka run timed out after {timeout}s'
-        results: List[ProbeResult] = []
-        for probe, task in zip(probes, tasks):
+        results: list[ProbeResult] = []
+        for probe, task in zip(probes, tasks, strict=True):
             if task in pending:
                 results.append(
                     ProbeResult(
@@ -152,7 +159,7 @@ class Probirka:
                         ok=False,
                         cached=None,
                         started_at=started_at,
-                        elapsed=datetime.now() - started_at,
+                        elapsed=timedelta(seconds=monotonic() - start),
                         info=probe.info,
                         error=timeout_error,
                     )
@@ -163,8 +170,8 @@ class Probirka:
 
     async def run(
         self,
-        timeout: Optional[int] = None,
-        with_groups: Union[str, List[str]] = '',
+        timeout: int | None = None,
+        with_groups: str | Sequence[str] = '',
         skip_required: bool = False,
     ) -> ProbirkaResult:
         """
@@ -178,20 +185,21 @@ class Probirka:
         :param skip_required: Skip probes without groups
         :return: Health check result
         """
-        if isinstance(with_groups, str):
-            with_groups = [with_groups] if with_groups else []
-        started_at = datetime.now()
+        groups = ([with_groups] if with_groups else []) if isinstance(with_groups, str) else list(with_groups)
+        started_at = datetime.now(UTC).astimezone()
+        start = monotonic()
         results, timed_out = await self._inner_run(
-            with_groups=with_groups,
+            with_groups=groups,
             skip_required=skip_required,
             timeout=timeout or None,
             started_at=started_at,
+            start=start,
         )
         return ProbirkaResult(
             ok=not timed_out and all(result.ok for result in results),
             info=self._info,
             started_at=started_at,
-            elapsed=datetime.now() - started_at,
+            elapsed=timedelta(seconds=monotonic() - start),
             checks=results,
             error=f'TimeoutError: probirka run timed out after {timeout}s' if timed_out else None,
         )

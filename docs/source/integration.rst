@@ -38,7 +38,7 @@ After running, you can get the check results by sending a GET request to `/healt
 
    {
      "ok": true,
-     "started_at": "2024-04-02T10:00:00.000123",
+     "started_at": "2024-04-02T10:00:00.000123+03:00",
      "elapsed": 0.001,
      "info": null,
      "checks": [
@@ -46,7 +46,7 @@ After running, you can get the check results by sending a GET request to `/healt
          "name": "api",
          "ok": true,
          "cached": null,
-         "started_at": "2024-04-02T10:00:00.000123",
+         "started_at": "2024-04-02T10:00:00.000123+03:00",
          "elapsed": 0.001,
          "info": null,
          "error": null
@@ -55,7 +55,7 @@ After running, you can get the check results by sending a GET request to `/healt
      "error": null
    }
 
-``started_at`` is an ISO 8601 timestamp and ``elapsed`` is the duration in seconds. The body is
+``started_at`` is a timezone-aware ISO 8601 timestamp and ``elapsed`` is the duration in seconds. The body is
 :meth:`probirka.ProbirkaResult.to_dict`, so every integration returns the same format.
 
 aiohttp

@@ -13,8 +13,8 @@ fmt-check:
 lint:
     uv run ruff check {{ SOURCE_PATH }}
 
-mypy:
-    uv run python -m mypy --pretty {{ SOURCE_PATH }}
+ty:
+    uv run ty check {{ SOURCE_PATH }}
 
 fix:
     uv run ruff check --fix --unsafe-fixes {{ SOURCE_PATH }}

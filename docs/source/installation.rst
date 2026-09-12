@@ -1,6 +1,8 @@
 Installation
 ============
 
+Probirka requires Python 3.11 or newer.
+
 You can install Probirka using pip:
 
 .. code-block:: bash

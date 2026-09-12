@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 from importlib import import_module
 from importlib.util import find_spec
-from typing import TYPE_CHECKING, Any, Dict, List, Tuple
+from typing import TYPE_CHECKING, Any
 
 from probirka._probes import CallableProbe, Probe, ProbeBase
 from probirka._probes._common import ClientOrFactory, ProbeFailure
@@ -47,7 +49,7 @@ class MissingDependencyError(ImportError):
 
 # name -> (module, import name, pip package). Resolved on first access so that importing
 # ``probirka`` never requires any client library or framework.
-_LAZY: Dict[str, Tuple[str, str, str]] = {
+_LAZY: dict[str, tuple[str, str, str]] = {
     'HttpAiohttpProbe': ('probirka._probes._http_aiohttp', 'aiohttp', 'aiohttp'),
     'HttpHttpx2Probe': ('probirka._probes._http_httpx2', 'httpx2', 'httpx2'),
     'HttpHttpxProbe': ('probirka._probes._http_httpx', 'httpx', 'httpx'),
@@ -108,5 +110,5 @@ def __getattr__(name: str) -> Any:
     return value
 
 
-def __dir__() -> List[str]:
+def __dir__() -> list[str]:
     return sorted(set(globals()) | set(__all__))

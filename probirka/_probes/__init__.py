@@ -1,10 +1,17 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from asyncio import TimeoutError as AsyncTimeoutError, get_running_loop, wait_for
-from datetime import datetime, timedelta
+from asyncio import get_running_loop, wait_for
+from collections.abc import Awaitable, Callable
+from datetime import UTC, datetime, timedelta
 from inspect import isawaitable, iscoroutinefunction
-from typing import Any, Awaitable, Callable, Dict, Optional, Protocol, Union
+from time import monotonic
+from typing import Any, Protocol, TypeAlias
 
 from probirka._results import ProbeResult
+
+ProbeCallable: TypeAlias = Callable[[], bool | Awaitable[bool | None] | None]
+"""Zero-argument sync or async callable returning ``True``/``None`` on success, ``False`` on failure."""
 
 
 def format_error(exc: BaseException) -> str:
@@ -32,7 +39,7 @@ class Probe(Protocol):
         ...
 
     @property
-    def info(self) -> Optional[Dict[str, Any]]:
+    def info(self) -> dict[str, Any] | None:
         """Metadata attached to the probe, ``None`` if nothing was added."""
         ...
 
@@ -52,10 +59,10 @@ class ProbeBase(ABC):
 
     def __init__(
         self,
-        name: Optional[str] = None,
-        timeout: Optional[int] = None,
-        success_ttl: Optional[Union[int, timedelta]] = None,
-        failed_ttl: Optional[Union[int, timedelta]] = None,
+        name: str | None = None,
+        timeout: int | None = None,
+        success_ttl: int | timedelta | None = None,
+        failed_ttl: int | timedelta | None = None,
     ) -> None:
         """
         Initialize the probe.
@@ -69,8 +76,9 @@ class ProbeBase(ABC):
         self._name = name or self.__class__.__name__
         self._success_ttl = timedelta(seconds=success_ttl) if isinstance(success_ttl, int) else success_ttl
         self._failed_ttl = timedelta(seconds=failed_ttl) if isinstance(failed_ttl, int) else failed_ttl
-        self._last_result: Optional[ProbeResult] = None
-        self._info: Optional[Dict[str, Any]] = None
+        self._last_result: ProbeResult | None = None
+        self._cache_until: float | None = None
+        self._info: dict[str, Any] | None = None
 
     @property
     def name(
@@ -101,7 +109,7 @@ class ProbeBase(ABC):
     @property
     def info(
         self,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Get the information added to the probe result.
 
@@ -112,7 +120,7 @@ class ProbeBase(ABC):
     @abstractmethod
     async def _check(
         self,
-    ) -> Optional[bool]:
+    ) -> bool | None:
         """
         Perform the check.
 
@@ -128,26 +136,21 @@ class ProbeBase(ABC):
 
         :return: The result of the check.
         """
-        now = datetime.now()
         use_cache = bool(self._success_ttl or self._failed_ttl)
 
-        if self._last_result:
-            last_check_time = self._last_result.started_at + self._last_result.elapsed
-            ttl = self._success_ttl if self._last_result.ok else self._failed_ttl
-            if ttl is not None:
-                cache_until = last_check_time + ttl
-                if now < cache_until:
-                    return ProbeResult(
-                        ok=self._last_result.ok,
-                        started_at=self._last_result.started_at,
-                        elapsed=self._last_result.elapsed,
-                        name=self._last_result.name,
-                        error=self._last_result.error,
-                        info=self._last_result.info,
-                        cached=True,
-                    )
+        if self._last_result and self._cache_until is not None and monotonic() < self._cache_until:
+            return ProbeResult(
+                ok=self._last_result.ok,
+                started_at=self._last_result.started_at,
+                elapsed=self._last_result.elapsed,
+                name=self._last_result.name,
+                error=self._last_result.error,
+                info=self._last_result.info,
+                cached=True,
+            )
 
-        started_at = now
+        started_at = datetime.now(UTC).astimezone()
+        start = monotonic()
         error = None
         try:
             result = await wait_for(
@@ -155,7 +158,7 @@ class ProbeBase(ABC):
                 timeout=self._timeout,
             )
             ok = True if result is None else bool(result)
-        except AsyncTimeoutError:
+        except TimeoutError:
             ok = False
             error = f'TimeoutError: probe timed out after {self._timeout}s'
         except Exception as exc:
@@ -165,7 +168,7 @@ class ProbeBase(ABC):
         probe_result = ProbeResult(
             ok=ok,
             started_at=started_at,
-            elapsed=datetime.now() - started_at,
+            elapsed=timedelta(seconds=monotonic() - start),
             name=self._name,
             error=error,
             info=self._info,
@@ -176,6 +179,7 @@ class ProbeBase(ABC):
             ttl = self._success_ttl if probe_result.ok else self._failed_ttl
             if ttl is not None:
                 self._last_result = probe_result
+                self._cache_until = monotonic() + ttl.total_seconds()
 
         return probe_result
 
@@ -194,24 +198,25 @@ class CallableProbe(ProbeBase):
 
     def __init__(
         self,
-        func: Callable[[], Union[Optional[bool], Awaitable[Optional[bool]]]],
-        name: Optional[str] = None,
-        timeout: Optional[int] = None,
-        success_ttl: Optional[Union[int, timedelta]] = None,
-        failed_ttl: Optional[Union[int, timedelta]] = None,
+        func: ProbeCallable,
+        name: str | None = None,
+        timeout: int | None = None,
+        success_ttl: int | timedelta | None = None,
+        failed_ttl: int | timedelta | None = None,
     ) -> None:
         """
         Initialize the probe.
 
         :param func: Sync or async callable returning ``True``/``None`` on success, ``False`` on failure.
-        :param name: The name of the probe. Defaults to ``func.__name__``.
+        :param name: The name of the probe. Defaults to ``func.__name__``, falling back to the
+            class name for callables without one (``functools.partial``, objects with ``__call__``).
         :param timeout: The timeout for the probe.
         :param success_ttl: Cache duration for successful results. If None, successful results are not cached.
         :param failed_ttl: Cache duration for failed results. If None, failed results are not cached.
         """
         self._func = func
         super().__init__(
-            name=name or func.__name__,
+            name=name or getattr(func, '__name__', type(func).__name__),
             timeout=timeout,
             success_ttl=success_ttl,
             failed_ttl=failed_ttl,
@@ -219,7 +224,7 @@ class CallableProbe(ProbeBase):
 
     async def _check(
         self,
-    ) -> Optional[bool]:
+    ) -> bool | None:
         """
         Perform the check by calling the function.
 

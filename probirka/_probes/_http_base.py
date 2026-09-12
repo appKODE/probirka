@@ -1,5 +1,8 @@
+from __future__ import annotations
+
+from collections.abc import Collection, Mapping
 from datetime import timedelta
-from typing import Any, Collection, Mapping, Optional, Union
+from typing import Any
 
 from probirka._probes._client_base import ClientProbeBase
 from probirka._probes._common import ClientOrFactory, ProbeFailure
@@ -18,13 +21,13 @@ class HttpProbeBase(ClientProbeBase):
         url: str,
         *,
         method: str = 'GET',
-        expected_status: Union[int, Collection[int]] = (200,),
-        headers: Optional[Mapping[str, str]] = None,
-        client: Optional[ClientOrFactory[Any]] = None,
-        name: Optional[str] = None,
-        timeout: Optional[int] = None,
-        success_ttl: Optional[Union[int, timedelta]] = None,
-        failed_ttl: Optional[Union[int, timedelta]] = None,
+        expected_status: int | Collection[int] = (200,),
+        headers: Mapping[str, str] | None = None,
+        client: ClientOrFactory[Any] | None = None,
+        name: str | None = None,
+        timeout: int | None = None,
+        success_ttl: int | timedelta | None = None,
+        failed_ttl: int | timedelta | None = None,
     ) -> None:
         """
         Initialize the probe.

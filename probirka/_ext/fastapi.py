@@ -1,4 +1,7 @@
-from typing import Any, Callable, Coroutine, List, Optional, Union
+from __future__ import annotations
+
+from collections.abc import Callable, Coroutine, Sequence
+from typing import Any
 
 from fastapi import status
 from fastapi.encoders import jsonable_encoder
@@ -9,8 +12,8 @@ from probirka._probirka import Probirka
 
 def make_fastapi_endpoint(
     probirka: Probirka,
-    timeout: Optional[int] = None,
-    with_groups: Union[str, List[str]] = '',
+    timeout: int | None = None,
+    with_groups: str | Sequence[str] = '',
     skip_required: bool = False,
     return_results: bool = True,
     success_code: int = status.HTTP_200_OK,
@@ -21,8 +24,8 @@ def make_fastapi_endpoint(
 
     Args:
         probirka (Probirka): The Probirka instance to run.
-        timeout (Optional[int]): The timeout for the Probirka run.
-        with_groups (Union[str, List[str]]): Groups to include in the Probirka run.
+        timeout (int | None): The timeout for the Probirka run.
+        with_groups (str | Sequence[str]): Groups to include in the Probirka run.
         skip_required (bool): Whether to skip required checks.
         return_results (bool): Whether to return the results in the response.
         success_code (int): The HTTP status code for a successful response.

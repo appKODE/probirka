@@ -1,6 +1,9 @@
+from __future__ import annotations
+
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import timedelta
-from typing import Any, AsyncIterator, Optional, Union
+from typing import Any
 
 import aio_pika
 
@@ -18,13 +21,13 @@ class RabbitmqAiopikaProbe(ClientProbeBase):
 
     def __init__(
         self,
-        client: Optional[ClientOrFactory[Any]] = None,
+        client: ClientOrFactory[Any] | None = None,
         *,
-        url: Optional[str] = None,
-        name: Optional[str] = None,
-        timeout: Optional[int] = None,
-        success_ttl: Optional[Union[int, timedelta]] = None,
-        failed_ttl: Optional[Union[int, timedelta]] = None,
+        url: str | None = None,
+        name: str | None = None,
+        timeout: int | None = None,
+        success_ttl: int | timedelta | None = None,
+        failed_ttl: int | timedelta | None = None,
     ) -> None:
         """
         Initialize the probe.

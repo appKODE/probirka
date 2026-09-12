@@ -3,7 +3,7 @@ name = "probirka"
 version = "0.0.0"
 description = "Framework-agnostic library for running health probes in Python applications, with built-in probes and integrations for popular HTTP frameworks."
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.11"
 dependencies = []
 license = "MIT"
 authors = [
@@ -22,13 +22,11 @@ classifiers = [
   "Topic :: System :: Monitoring",
   "Typing :: Typed",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: 3.15",
 ]
 
 [project.urls]
@@ -48,11 +46,10 @@ dev = [
   "bandit>=1.7.10",
   "fastapi>=0.115.6",
   "httpx>=0.28.1",
-  "httpx2>=2.0; python_version >= '3.10'",
+  "httpx2>=2.0",
   "motor>=3.0",
   "pymongo>=4.9",
   "redis>=4.2",
-  "mypy>=1.13.0",
   "pre-commit>=3.5.0",
   "pytest>=8.3.4",
   "pytest-asyncio>=0.24.0",
@@ -62,26 +59,20 @@ dev = [
   "sphinx>=7.1.2",
   "sphinx-autodoc-typehints>=2.0.1",
   "sphinx-rtd-theme>=3.0.2",
+  "ty>=0.0.80",
 ]
 
-[tool.mypy]
-python_version = "3.8"
-ignore_missing_imports = true
-follow_imports = "silent"
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-strict_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-no_implicit_reexport = true
+[tool.ty.environment]
+python-version = "3.11"
+
+[tool.ty.src]
 exclude = [
-  '.venv/',
-  'venv/',
+  ".venv/",
+  "venv/",
 ]
 
 [tool.ruff]
-target-version = "py38"
+target-version = "py311"
 line-length = 120
 exclude = [
   ".venv",
@@ -112,7 +103,7 @@ lint.select = [
   # "COM", # flake8-commas
   # "CPY", # flake8-copyright
   "C4", # flake8-comprehensions
-  # "DTZ", # flake8-datetimez
+  "DTZ", # flake8-datetimez
   "T10", # flake8-debugger
   # "DJ", # flake8-django
   # "EM", # flake8-errmsg

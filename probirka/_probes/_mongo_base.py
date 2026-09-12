@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 from abc import abstractmethod
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import timedelta
-from typing import Any, AsyncIterator, Dict, Optional, Union
+from typing import Any
 
 from probirka._probes._client_base import ClientProbeBase
 from probirka._probes._common import ClientOrFactory, require_exactly_one
@@ -16,13 +19,13 @@ class MongoProbeBase(ClientProbeBase):
 
     def __init__(
         self,
-        client: Optional[ClientOrFactory[Any]] = None,
+        client: ClientOrFactory[Any] | None = None,
         *,
-        url: Optional[str] = None,
-        name: Optional[str] = None,
-        timeout: Optional[int] = None,
-        success_ttl: Optional[Union[int, timedelta]] = None,
-        failed_ttl: Optional[Union[int, timedelta]] = None,
+        url: str | None = None,
+        name: str | None = None,
+        timeout: int | None = None,
+        success_ttl: int | timedelta | None = None,
+        failed_ttl: int | timedelta | None = None,
     ) -> None:
         """
         Initialize the probe.
@@ -53,7 +56,7 @@ class MongoProbeBase(ClientProbeBase):
     @asynccontextmanager
     async def _temporary_client(self) -> AsyncIterator[Any]:
         assert self._url is not None
-        kwargs: Dict[str, Any] = {}
+        kwargs: dict[str, Any] = {}
         if self._timeout is not None:
             kwargs['serverSelectionTimeoutMS'] = self._timeout * 1000
         client = self._new_client(self._url, **kwargs)
