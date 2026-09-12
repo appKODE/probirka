@@ -15,6 +15,7 @@ A small async engine that runs checks concurrently, handles timeouts, caches res
 * ⏱ per-probe and overall timeouts
 * 💾 separate caching of successful and failed results
 * 🧩 optional probe groups — cheap liveness, expensive readiness
+* 🟡 `allow_failure` — non-critical probes that may fail without failing the check
 * 🔌 ready-made probes for common infrastructure
 * 🌐 FastAPI, aiohttp and Django adapters, plus a dependency-free ASGI app for everything else
 * 🐍 fully typed
@@ -123,6 +124,7 @@ A failing check therefore looks like this:
             'elapsed': 2.0,
             'info': None,
             'error': 'TimeoutError: probe timed out after 2s',
+            'allow_failure': False,
         },
         ...
     ],
@@ -130,7 +132,7 @@ A failing check therefore looks like this:
 }
 ```
 
-The top-level `ok` is `True` only when every probe that ran passed.
+The top-level `ok` is `True` when every probe that ran passed, except probes marked with `allow_failure` — those may fail without affecting it, see [Allowing failures](#allowing-failures).
 
 ## Ready-made probes
 
@@ -274,6 +276,49 @@ app.add_api_route('/readyz', make_fastapi_endpoint(probirka, with_groups='readin
 
 Groups that were never registered are ignored rather than reported as failures.
 
+## Allowing failures
+
+Not every dependency is critical. A cache or a metrics backend may be down while the service still serves traffic, and a health check that reports `503` in that case only causes restarts. Mark such probes with `allow_failure=True`, named after the same option in GitLab CI:
+
+```python
+@probirka.add(name='cache', allow_failure=True)
+async def check_cache():
+    return await redis.ping()
+
+
+probirka.add_probes(
+    TcpProbe('smtp.internal', 25, name='smtp', allow_failure=True),
+)
+```
+
+A probe with `allow_failure` runs and is reported like any other: its `ok`, `error` and `elapsed` are in `checks`, and its result carries `allow_failure: true`. It just does not count towards the top-level `ok`, so the HTTP integrations return `success_code` even when it fails:
+
+```python
+{
+    'ok': True,
+    'checks': [
+        {'name': 'database', 'ok': True, 'allow_failure': False, ...},
+        {'name': 'cache', 'ok': False, 'allow_failure': True, 'error': 'ConnectionError: ...', ...},
+    ],
+    'error': None,
+}
+```
+
+The flag can also be set for a whole [group](#groups). It then overrides the probes' own setting, in both directions:
+
+```python
+probirka.add_probes(
+    HttpHttpxProbe('https://partner.example/health', name='partner'),
+    TcpProbe('smtp.internal', 25, name='smtp'),
+    groups='external',
+    allow_failure=True,
+)
+```
+
+Without `allow_failure` the group leaves every probe as it is. When a probe is run through several sources at once — the required list and a group, or two groups — it is allowed to fail only if every source allows it, so a strict source always wins. `add_probes(..., allow_failure=...)` without `groups` raises `ValueError`: for required probes set the flag on the probe itself.
+
+The overall `run(timeout=...)` follows the same rule: if only probes with `allow_failure` did not finish in time, `ok` stays `True`, while `error` still reports the timeout.
+
 ## Caching
 
 Health checks should not necessarily hit every dependency on every request. Probirka can cache successful and failed probe results independently:
@@ -316,7 +361,7 @@ There is also an overall timeout for the complete run:
 result = await probirka.run(timeout=5)
 ```
 
-This prevents one slow dependency from keeping the whole health check request open indefinitely. `run()` never raises on the overall timeout: probes that did not finish in time are cancelled and reported as failed, finished ones keep their results, and the run itself gets `ok=False` with `error` set to `'TimeoutError: probirka run timed out after 5s'`.
+This prevents one slow dependency from keeping the whole health check request open indefinitely. `run()` never raises on the overall timeout: probes that did not finish in time are cancelled and reported as failed, finished ones keep their results, and the run itself gets `error` set to `'TimeoutError: probirka run timed out after 5s'`. `ok` becomes `False` unless every probe that did not finish has [`allow_failure`](#allowing-failures).
 
 ## HTTP integrations
 
@@ -447,6 +492,7 @@ for check in result.checks:
         check.cached,
         check.elapsed,
         check.error,
+        check.allow_failure,
     )
 ```
 

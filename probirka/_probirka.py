@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from asyncio import ensure_future, gather, wait
 from collections import defaultdict
+from dataclasses import replace
 from collections.abc import Callable, Sequence
 from datetime import UTC, datetime, timedelta
 from time import monotonic
@@ -31,6 +32,7 @@ class Probirka:
         """
         self._required_probes: list[Probe] = []
         self._optional_probes: dict[str, list[Probe]] = defaultdict(list)
+        self._group_allow_failure: dict[str, bool] = {}
         self._info: dict[str, Any] | None = None
         self._success_ttl = timedelta(seconds=success_ttl) if isinstance(success_ttl, int) else success_ttl
         self._failed_ttl = timedelta(seconds=failed_ttl) if isinstance(failed_ttl, int) else failed_ttl
@@ -65,18 +67,30 @@ class Probirka:
         self,
         *probes: Probe,
         groups: str | Sequence[str] = '',
+        allow_failure: bool | None = None,
     ) -> None:
         """
         Add probes to the health check.
 
         :param probes: Probes to add
         :param groups: Groups for optional probes. Probes without groups are required.
+        :param allow_failure: Group-level override of the probes' own ``allow_failure``.
+            ``None`` (default) leaves the group as is, so every probe keeps its own setting.
+            ``True``/``False`` applies to all probes of the given groups, including ones
+            added earlier, and replaces a value set by a previous call. A probe that is run
+            through several sources (required list, several groups) is allowed to fail only
+            if every source allows it. Requires ``groups``.
+        :raises ValueError: if ``allow_failure`` is given without ``groups``
         """
         if groups:
             names = [groups] if isinstance(groups, str) else groups
             for group in names:
                 self._optional_probes[group].extend(probes)
+                if allow_failure is not None:
+                    self._group_allow_failure[group] = allow_failure
             return
+        if allow_failure is not None:
+            raise ValueError('allow_failure applies to groups; set it on the probe itself')
         self._required_probes.extend(probes)
 
     def add(
@@ -86,6 +100,7 @@ class Probirka:
         groups: str | Sequence[str] = '',
         success_ttl: int | timedelta | None = None,
         failed_ttl: int | timedelta | None = None,
+        allow_failure: bool = False,
     ) -> Callable[[ProbeFuncT], ProbeFuncT]:
         """
         Decorator to add a callable as a probe.
@@ -97,6 +112,8 @@ class Probirka:
             Pass ``0`` to disable caching of successful results for this probe.
         :param failed_ttl: Cache duration for failed results. If None, uses the global failed_ttl setting.
             Pass ``0`` to disable caching of failed results for this probe.
+        :param allow_failure: If True, a failure of this probe does not affect the overall ``ok``.
+            A group-level ``allow_failure`` passed to :meth:`add_probes` overrides this.
         :return: Decorated function
         """
 
@@ -108,12 +125,55 @@ class Probirka:
                     timeout=timeout,
                     success_ttl=success_ttl if success_ttl is not None else self._success_ttl,
                     failed_ttl=failed_ttl if failed_ttl is not None else self._failed_ttl,
+                    allow_failure=allow_failure,
                 ),
                 groups=groups,
             )
             return func
 
         return _wrapper
+
+    def _collect(
+        self,
+        with_groups: Sequence[str],
+        skip_required: bool,
+    ) -> tuple[list[Probe], dict[int, list[bool | None]]]:
+        """
+        Build the list of probes to run and, per probe, the ``allow_failure`` value of every
+        source (required list or group) it is run through.
+
+        A source contributes ``None`` when it does not override the probe's own setting.
+        The same probe object may appear more than once in the list; its sources are
+        merged by identity so the effective flag is the same for every occurrence.
+
+        :param with_groups: Groups to run
+        :param skip_required: Skip probes without groups
+        :return: Probes in registration order and their sources keyed by ``id(probe)``
+        """
+        probes: list[Probe] = []
+        sources: dict[int, list[bool | None]] = defaultdict(list)
+        if not skip_required:
+            for probe in self._required_probes:
+                probes.append(probe)
+                sources[id(probe)].append(None)
+        for group in with_groups:
+            group_flag = self._group_allow_failure.get(group)
+            for probe in self._optional_probes.get(group, ()):
+                probes.append(probe)
+                sources[id(probe)].append(group_flag)
+        return probes, sources
+
+    @staticmethod
+    def _effective_allow_failure(
+        own: bool,
+        sources: Sequence[bool | None],
+    ) -> bool:
+        """
+        Combine the probe's own ``allow_failure`` with the overrides of the sources it ran through.
+
+        Every source must allow the failure: a strict source always wins.
+        """
+        return all(own if flag is None else flag for flag in sources)
 
     async def _inner_run(
         self,
@@ -128,6 +188,8 @@ class Probirka:
 
         Probes that do not finish within ``timeout`` are cancelled and reported
         as failed with a ``TimeoutError`` message, so partial results survive.
+        Each result carries the effective ``allow_failure`` for this run: the probe's
+        own setting unless a group it ran in overrides it.
 
         :param with_groups: Groups to run. Required probes run unless skip_required=True
         :param skip_required: Skip probes without groups
@@ -136,9 +198,7 @@ class Probirka:
         :param start: ``time.monotonic()`` reading taken at the same moment, used to measure durations
         :return: Probe results and whether the overall timeout was hit
         """
-        probes: list[Probe] = [] if skip_required else list(self._required_probes)
-        for group in with_groups:
-            probes.extend(self._optional_probes.get(group, ()))
+        probes, sources = self._collect(with_groups, skip_required)
         if not probes:
             return [], False
 
@@ -153,6 +213,7 @@ class Probirka:
         results: list[ProbeResult] = []
         for probe, task in zip(probes, tasks, strict=True):
             if task in pending:
+                own = bool(getattr(probe, 'allow_failure', False))
                 results.append(
                     ProbeResult(
                         name=probe.name,
@@ -162,10 +223,15 @@ class Probirka:
                         elapsed=timedelta(seconds=monotonic() - start),
                         info=probe.info,
                         error=timeout_error,
+                        allow_failure=self._effective_allow_failure(own, sources[id(probe)]),
                     )
                 )
-            else:
-                results.append(task.result())
+                continue
+            result = task.result()
+            effective = self._effective_allow_failure(result.allow_failure, sources[id(probe)])
+            if effective != result.allow_failure:
+                result = replace(result, allow_failure=effective)
+            results.append(result)
         return results, bool(pending)
 
     async def run(
@@ -178,7 +244,8 @@ class Probirka:
         Run health check and return results.
 
         The overall timeout never raises: probes that did not finish in time are
-        reported as failed and the whole result gets ``ok=False`` with ``error`` set.
+        reported as failed and ``error`` is set. ``ok`` is ``False`` only if a probe
+        without ``allow_failure`` failed or did not finish in time.
 
         :param timeout: Overall timeout in seconds
         :param with_groups: Groups to run. Required probes run unless skip_required=True
@@ -196,7 +263,7 @@ class Probirka:
             start=start,
         )
         return ProbirkaResult(
-            ok=not timed_out and all(result.ok for result in results),
+            ok=all(result.ok or result.allow_failure for result in results),
             info=self._info,
             started_at=started_at,
             elapsed=timedelta(seconds=monotonic() - start),

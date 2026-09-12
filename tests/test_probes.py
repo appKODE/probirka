@@ -414,3 +414,32 @@ async def test_callable_probe_names_callables_without_dunder_name() -> None:
 
     result = await probe.run_check()
     assert result.name == '_AsyncCallable'
+
+
+@pytest.mark.asyncio
+async def test_probe_allow_failure_flag() -> None:
+    class FailingProbe(ProbeBase):
+        async def _check(self) -> bool:
+            return False
+
+    strict = await FailingProbe().run_check()
+    assert strict.allow_failure is False
+    assert FailingProbe().allow_failure is False
+
+    probe = FailingProbe(allow_failure=True, failed_ttl=1)
+    assert probe.allow_failure is True
+    fresh = await probe.run_check()
+    cached = await probe.run_check()
+    assert fresh.ok is False
+    assert fresh.allow_failure is True
+    assert cached.cached is True
+    assert cached.allow_failure is True
+
+
+@pytest.mark.asyncio
+async def test_callable_probe_allow_failure() -> None:
+    probe = CallableProbe(lambda: False, allow_failure=True)
+    result = await probe.run_check()
+    assert result.ok is False
+    assert result.allow_failure is True
+    assert result.to_dict()['allow_failure'] is True

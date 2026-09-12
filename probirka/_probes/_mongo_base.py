@@ -26,6 +26,7 @@ class MongoProbeBase(ClientProbeBase):
         timeout: int | None = None,
         success_ttl: int | timedelta | None = None,
         failed_ttl: int | timedelta | None = None,
+        allow_failure: bool = False,
     ) -> None:
         """
         Initialize the probe.
@@ -37,9 +38,16 @@ class MongoProbeBase(ClientProbeBase):
             ``serverSelectionTimeoutMS`` so that the failure is reported by the driver, not as a bare timeout.
         :param success_ttl: Cache duration for successful results.
         :param failed_ttl: Cache duration for failed results.
+        :param allow_failure: If True, a failure of this probe does not affect the overall result.
         """
         require_exactly_one(client=client, url=url)
-        super().__init__(name=name, timeout=timeout, success_ttl=success_ttl, failed_ttl=failed_ttl)
+        super().__init__(
+            name=name,
+            timeout=timeout,
+            success_ttl=success_ttl,
+            failed_ttl=failed_ttl,
+            allow_failure=allow_failure,
+        )
         self._client = client
         self._url = url
 

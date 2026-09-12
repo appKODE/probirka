@@ -290,3 +290,16 @@ def test_fastapi_mount(probirka: Probirka) -> None:
     assert response.json()['ok'] is True
     # a mounted app is invisible to OpenAPI
     assert '/health' not in client.get('/openapi.json').json()['paths']
+
+
+@pytest.mark.asyncio
+async def test_allowed_failure_returns_success_code(probirka: Probirka) -> None:
+    probirka.add_probes(SuccessProbe(name='db'), FailureProbe(name='cache', allow_failure=True))
+
+    response = await call(make_asgi_app(probirka))
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data['ok'] is True
+    assert data['checks'][1]['ok'] is False
+    assert data['checks'][1]['allow_failure'] is True
