@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 from asyncio import open_connection
 from datetime import timedelta
-from typing import Optional, Union
 
 from probirka._probes import ProbeBase
 
@@ -18,10 +19,10 @@ class TcpProbe(ProbeBase):
         self,
         host: str,
         port: int,
-        name: Optional[str] = None,
-        timeout: Optional[int] = None,
-        success_ttl: Optional[Union[int, timedelta]] = None,
-        failed_ttl: Optional[Union[int, timedelta]] = None,
+        name: str | None = None,
+        timeout: int | None = None,
+        success_ttl: int | timedelta | None = None,
+        failed_ttl: int | timedelta | None = None,
     ) -> None:
         """
         Initialize the probe.
@@ -37,7 +38,7 @@ class TcpProbe(ProbeBase):
         self._host = host
         self._port = port
 
-    async def _check(self) -> Optional[bool]:
+    async def _check(self) -> bool | None:
         _, writer = await open_connection(self._host, self._port)
         writer.close()
         await writer.wait_closed()

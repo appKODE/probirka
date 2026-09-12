@@ -1,5 +1,8 @@
+from __future__ import annotations
+
+from contextlib import AbstractAsyncContextManager
 from datetime import timedelta
-from typing import Any, AsyncContextManager, Optional, Union
+from typing import Any
 
 from redis.asyncio import Redis
 
@@ -17,13 +20,13 @@ class RedisProbe(ClientProbeBase):
 
     def __init__(
         self,
-        client: Optional[ClientOrFactory[Any]] = None,
+        client: ClientOrFactory[Any] | None = None,
         *,
-        url: Optional[str] = None,
-        name: Optional[str] = None,
-        timeout: Optional[int] = None,
-        success_ttl: Optional[Union[int, timedelta]] = None,
-        failed_ttl: Optional[Union[int, timedelta]] = None,
+        url: str | None = None,
+        name: str | None = None,
+        timeout: int | None = None,
+        success_ttl: int | timedelta | None = None,
+        failed_ttl: int | timedelta | None = None,
     ) -> None:
         """
         Initialize the probe.
@@ -40,7 +43,7 @@ class RedisProbe(ClientProbeBase):
         self._client = client
         self._url = url
 
-    def _temporary_client(self) -> AsyncContextManager[Any]:
+    def _temporary_client(self) -> AbstractAsyncContextManager[Any]:
         assert self._url is not None
         # ``Redis`` is an async context manager since redis-py 4.2; ``__aexit__`` closes the client
         return Redis.from_url(self._url)

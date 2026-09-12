@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 from abc import abstractmethod
-from typing import Any, AsyncContextManager, Optional
+from contextlib import AbstractAsyncContextManager
+from typing import Any
 
 from probirka._probes import ProbeBase
 from probirka._probes._common import ClientOrFactory, resolve
@@ -15,10 +18,10 @@ class ClientProbeBase(ProbeBase):
     An existing client is never closed by the probe.
     """
 
-    _client: Optional[ClientOrFactory[Any]] = None
+    _client: ClientOrFactory[Any] | None = None
 
     @abstractmethod
-    def _temporary_client(self) -> AsyncContextManager[Any]:
+    def _temporary_client(self) -> AbstractAsyncContextManager[Any]:
         """Open a short-lived client from the connection string; used when no client was passed."""
         raise NotImplementedError
 
@@ -27,7 +30,7 @@ class ClientProbeBase(ProbeBase):
         """Run the check against ``client``; raise on failure."""
         raise NotImplementedError
 
-    async def _check(self) -> Optional[bool]:
+    async def _check(self) -> bool | None:
         if self._client is not None:
             await self._check_client(resolve(self._client))
             return True

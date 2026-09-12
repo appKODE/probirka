@@ -9,8 +9,17 @@
 - `CallableProbe` is exported from the `probirka` package; names that need a third-party package (probes, `make_*` adapters) are resolved lazily and listed in `__all__` only when their package is installed, so `from probirka import *` brings what you can use and works with a bare install
 
 ### Changed
+- Minimum supported Python is 3.11; the test matrix covers 3.11 through 3.15
+- `started_at` in `ProbeResult` and `ProbirkaResult` is timezone-aware in the local zone of the host, so `to_dict()` and every HTTP integration now emit an ISO 8601 timestamp with a UTC offset
+- `elapsed` and the TTL cache are measured with `time.monotonic()` instead of the wall clock, so clock adjustments no longer distort durations or cache expiry
+- `CallableProbe` falls back to the class name for callables without `__name__` (`functools.partial`, objects with `__call__`) instead of raising `AttributeError`
+- `groups` and `with_groups` accept any `Sequence[str]`, not just `list`
+- Type checking moved from mypy to ty; annotations use PEP 585/604 syntax throughout
 - Framework adapter modules are private now (`probirka._ext.*`); `make_fastapi_endpoint`, `make_aiohttp_endpoint` and `make_django_view` are imported from `probirka` as before, resolved lazily; when the framework is missing they raise an `ImportError` naming the package instead of an `AttributeError`
 - `probirka` stays dependency-free; client libraries and frameworks are installed separately (no extras)
+
+### Fixed
+- `ProbeResult.elapsed` no longer includes the time spent looking up the TTL cache
 
 ## [0.6.1] - 2026-09-11
 

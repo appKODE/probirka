@@ -1,6 +1,9 @@
+from __future__ import annotations
+
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import timedelta
-from typing import Any, AsyncIterator, List, Optional, Union
+from typing import Any
 
 from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 from aiokafka.admin import AIOKafkaAdminClient
@@ -20,13 +23,13 @@ class KafkaAiokafkaProbe(ClientProbeBase):
 
     def __init__(
         self,
-        client: Optional[ClientOrFactory[Any]] = None,
+        client: ClientOrFactory[Any] | None = None,
         *,
-        bootstrap_servers: Optional[Union[str, List[str]]] = None,
-        name: Optional[str] = None,
-        timeout: Optional[int] = None,
-        success_ttl: Optional[Union[int, timedelta]] = None,
-        failed_ttl: Optional[Union[int, timedelta]] = None,
+        bootstrap_servers: str | list[str] | None = None,
+        name: str | None = None,
+        timeout: int | None = None,
+        success_ttl: int | timedelta | None = None,
+        failed_ttl: int | timedelta | None = None,
     ) -> None:
         """
         Initialize the probe.
@@ -46,6 +49,7 @@ class KafkaAiokafkaProbe(ClientProbeBase):
 
     @asynccontextmanager
     async def _temporary_client(self) -> AsyncIterator[Any]:
+        assert self._bootstrap_servers is not None
         admin = AIOKafkaAdminClient(bootstrap_servers=self._bootstrap_servers)
         try:
             await admin.start()

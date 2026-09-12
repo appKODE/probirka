@@ -1,6 +1,6 @@
 import asyncio
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytest
 from probirka import Probirka
@@ -173,3 +173,70 @@ async def test_probe_ttl_zero_overrides_global_ttl() -> None:
     results = await checks.run()
     assert counter == 2
     assert results.checks[0].cached is not True
+
+
+@pytest.mark.asyncio
+async def test_timestamps_are_timezone_aware() -> None:
+    checks = Probirka()
+
+    @checks.add()
+    def _check() -> bool:
+        return True
+
+    results = await checks.run()
+
+    assert results.started_at.tzinfo is not None
+    assert results.started_at.utcoffset() is not None
+    assert results.checks[0].started_at.tzinfo is not None
+    assert results.checks[0].started_at.utcoffset() is not None
+
+    data = results.to_dict()
+    assert datetime.fromisoformat(data['started_at']) == results.started_at
+    assert datetime.fromisoformat(data['started_at']).utcoffset() is not None
+    assert datetime.fromisoformat(data['checks'][0]['started_at']) == results.checks[0].started_at
+
+
+@pytest.mark.asyncio
+async def test_elapsed_is_measured_monotonically() -> None:
+    checks = Probirka()
+
+    @checks.add()
+    async def _slow() -> bool:
+        await asyncio.sleep(0.3)
+        return True
+
+    results = await checks.run()
+
+    assert results.elapsed >= timedelta(seconds=0.3)
+    assert results.elapsed < timedelta(seconds=2)
+    assert results.checks[0].elapsed >= timedelta(seconds=0.3)
+    assert results.checks[0].elapsed <= results.elapsed
+
+
+@pytest.mark.asyncio
+async def test_elapsed_excludes_cache_lookup() -> None:
+    checks = Probirka(success_ttl=100)
+
+    @checks.add()
+    def _check() -> bool:
+        return True
+
+    first = await checks.run()
+    second = await checks.run()
+
+    assert second.checks[0].cached is True
+    assert second.checks[0].elapsed == first.checks[0].elapsed
+    assert second.checks[0].elapsed >= timedelta(0)
+
+
+@pytest.mark.asyncio
+async def test_run_accepts_any_sequence_of_groups() -> None:
+    checks = Probirka()
+
+    @checks.add(groups=('db', 'cache'))
+    def _check() -> bool:
+        return True
+
+    results = await checks.run(with_groups=('db',), skip_required=True)
+    assert len(results.checks) == 1
+    assert results.checks[0].name == '_check'

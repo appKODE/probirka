@@ -1,10 +1,13 @@
+from __future__ import annotations
+
+from collections.abc import Callable
 from functools import partial
 from inspect import isroutine
-from typing import Any, Callable, TypeVar, Union
+from typing import Any, TypeAlias, TypeVar, cast
 
 T = TypeVar('T')
 
-ClientOrFactory = Union[T, Callable[[], T]]
+ClientOrFactory: TypeAlias = T | Callable[[], T]
 """Either a ready client instance or a zero-argument function (lambda, ``functools.partial``) returning one."""
 
 
@@ -32,7 +35,7 @@ def resolve(client_or_factory: ClientOrFactory[T]) -> T:
     """
     if isroutine(client_or_factory) or isinstance(client_or_factory, partial):
         return client_or_factory()
-    return client_or_factory  # type: ignore[return-value]
+    return cast(T, client_or_factory)
 
 
 def require_exactly_one(**kwargs: Any) -> None:

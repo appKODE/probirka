@@ -1,6 +1,9 @@
+from __future__ import annotations
+
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any, Dict, Optional, Sequence
+from typing import Any
 
 
 @dataclass(frozen=True, order=True)
@@ -12,26 +15,26 @@ class ProbeResult:
     :param ok: Whether the check passed.
     :param cached: ``True`` if served from cache, ``False`` if freshly computed with caching enabled,
         ``None`` if the probe has no TTL configured.
-    :param started_at: When the check started.
-    :param elapsed: How long the check took.
+    :param started_at: When the check started, timezone-aware in the local zone of the host.
+    :param elapsed: How long the check took, measured with a monotonic clock.
     :param info: Metadata added via :meth:`ProbeBase.add_info`.
     :param error: ``'ExcType: message'`` when the check failed with an exception or timed out.
     """
 
     name: str
     ok: bool
-    cached: Optional[bool]
+    cached: bool | None
     started_at: datetime
     elapsed: timedelta
-    info: Optional[Dict[str, Any]]
-    error: Optional[str]
+    info: dict[str, Any] | None
+    error: str | None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         JSON-compatible representation of the result.
 
-        ``started_at`` is an ISO 8601 string, ``elapsed`` is the duration in seconds.
-        ``info`` is returned as is.
+        ``started_at`` is an ISO 8601 string carrying the UTC offset, ``elapsed`` is the duration
+        in seconds. ``info`` is returned as is.
         """
         return {
             'name': self.name,
@@ -50,8 +53,8 @@ class ProbirkaResult:
     Aggregated outcome of a :meth:`Probirka.run` call.
 
     :param ok: ``True`` only if every probe passed and the overall timeout was not hit.
-    :param started_at: When the run started.
-    :param elapsed: How long the whole run took.
+    :param started_at: When the run started, timezone-aware in the local zone of the host.
+    :param elapsed: How long the whole run took, measured with a monotonic clock.
     :param info: Metadata added via :meth:`Probirka.add_info`.
     :param checks: Per-probe results in registration order.
     :param error: Reason for failure when the overall timeout was hit, otherwise ``None``.
@@ -60,16 +63,16 @@ class ProbirkaResult:
     ok: bool
     started_at: datetime
     elapsed: timedelta
-    info: Optional[Dict[str, Any]]
+    info: dict[str, Any] | None
     checks: Sequence[ProbeResult]
-    error: Optional[str] = None
+    error: str | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         JSON-compatible representation of the result, shared by all framework integrations.
 
-        ``started_at`` is an ISO 8601 string, ``elapsed`` is the duration in seconds,
-        ``checks`` is a list of :meth:`ProbeResult.to_dict`. ``info`` is returned as is.
+        ``started_at`` is an ISO 8601 string carrying the UTC offset, ``elapsed`` is the duration
+        in seconds, ``checks`` is a list of :meth:`ProbeResult.to_dict`. ``info`` is returned as is.
         """
         return {
             'ok': self.ok,

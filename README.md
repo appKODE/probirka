@@ -28,7 +28,7 @@ It also includes ready-made probes for common infrastructure such as PostgreSQL,
 pip install probirka
 ```
 
-The core has no runtime dependencies.
+Requires Python 3.11 or newer. The core has no runtime dependencies.
 
 Ready-made probes and framework integrations use client libraries that you install alongside. Install only what you need:
 
@@ -103,7 +103,7 @@ Exceptions and timeouts are captured in the result:
 ```python
 {
     'ok': False,
-    'started_at': '2026-09-12T16:00:00.000000',
+    'started_at': '2026-09-12T16:00:00.000000+03:00',
     'elapsed': 2.001,
     'info': None,
     'checks': [
@@ -111,7 +111,7 @@ Exceptions and timeouts are captured in the result:
             'name': 'database',
             'ok': False,
             'cached': False,
-            'started_at': '2026-09-12T16:00:00.000000',
+            'started_at': '2026-09-12T16:00:00.000000+03:00',
             'elapsed': 2.0,
             'info': None,
             'error': 'TimeoutError: probe timed out after 2s',
@@ -296,7 +296,9 @@ Adapters are also available for aiohttp (`make_aiohttp_endpoint`) and Django (`m
 
 ## Results
 
-Results are represented by typed immutable data classes:
+Results are represented by typed immutable data classes. `started_at` is timezone-aware in the local
+zone of the host, and `elapsed` is measured with a monotonic clock, so it is unaffected by clock
+adjustments:
 
 ```python
 result = await probirka.run()

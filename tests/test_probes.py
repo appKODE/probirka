@@ -354,3 +354,63 @@ async def test_callable_probe_sync_returning_awaitable() -> None:
     probe = CallableProbe(_func)
     result = await probe.run_check()
     assert result.ok is False
+
+
+@pytest.mark.asyncio
+async def test_started_at_is_timezone_aware() -> None:
+    class _Probe(ProbeBase):
+        async def _check(self) -> bool:
+            return True
+
+    result = await _Probe().run_check()
+    assert result.started_at.tzinfo is not None
+    assert result.started_at.utcoffset() is not None
+    assert datetime.fromisoformat(result.to_dict()['started_at']) == result.started_at
+
+
+@pytest.mark.asyncio
+async def test_cache_ttl_survives_wall_clock_jumps() -> None:
+    class _Probe(ProbeBase):
+        def __init__(self) -> None:
+            super().__init__(success_ttl=100)
+            self.calls = 0
+
+        async def _check(self) -> bool:
+            self.calls += 1
+            return True
+
+    probe = _Probe()
+    first = await probe.run_check()
+
+    # The wall clock jumps a year ahead; the monotonic deadline must still hold the cache.
+    with patch('probirka._probes.datetime') as mock_datetime:
+        mock_datetime.now.return_value = first.started_at + timedelta(days=365)
+        second = await probe.run_check()
+
+    assert second.cached is True
+    assert probe.calls == 1
+
+
+@pytest.mark.asyncio
+async def test_elapsed_is_monotonic() -> None:
+    class _Probe(ProbeBase):
+        async def _check(self) -> bool:
+            await asyncio.sleep(0.3)
+            return True
+
+    result = await _Probe().run_check()
+    assert result.elapsed >= timedelta(seconds=0.3)
+    assert result.elapsed < timedelta(seconds=2)
+
+
+@pytest.mark.asyncio
+async def test_callable_probe_names_callables_without_dunder_name() -> None:
+    class _AsyncCallable:
+        async def __call__(self) -> bool:
+            return True
+
+    probe = CallableProbe(_AsyncCallable())
+    assert probe.name == '_AsyncCallable'
+
+    result = await probe.run_check()
+    assert result.name == '_AsyncCallable'
