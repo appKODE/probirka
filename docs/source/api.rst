@@ -79,10 +79,12 @@ All probes below are importable from the ``probirka`` package, e.g. ``from probi
 Framework Adapters
 ------------------
 
+Importable from the ``probirka`` package, e.g. ``from probirka import make_fastapi_endpoint``.
+
 FastAPI
 ~~~~~~~
 
-.. automodule:: probirka.ext.fastapi
+.. automodule:: probirka._ext.fastapi
    :members:
    :undoc-members:
    :show-inheritance:
@@ -90,7 +92,7 @@ FastAPI
 AIOHTTP
 ~~~~~~~
 
-.. automodule:: probirka.ext.aiohttp
+.. automodule:: probirka._ext.aiohttp
    :members:
    :undoc-members:
    :show-inheritance:
@@ -98,7 +100,7 @@ AIOHTTP
 Django
 ~~~~~~
 
-.. automodule:: probirka.ext.django
+.. automodule:: probirka._ext.django
    :members:
    :undoc-members:
    :show-inheritance:

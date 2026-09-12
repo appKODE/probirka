@@ -51,11 +51,11 @@ Importable from `probirka`: `TcpProbe`, `PostgresAsyncpgProbe`, `RedisProbe`, `H
 
 ## Framework Adapters
 
-`probirka.ext.fastapi`, `probirka.ext.aiohttp` and `probirka.ext.django` turn a `Probirka` instance into a `/health` endpoint: `200` when all checks pass, `500` otherwise, body is `ProbirkaResult.to_dict()` as JSON.
+`make_fastapi_endpoint`, `make_aiohttp_endpoint` and `make_django_view` turn a `Probirka` instance into a `/health` endpoint: `200` when all checks pass, `500` otherwise, body is `ProbirkaResult.to_dict()` as JSON.
 
 ```python
 from fastapi import FastAPI
-from probirka.ext.fastapi import make_fastapi_endpoint
+from probirka import make_fastapi_endpoint
 
 app = FastAPI()
 app.add_api_route("/health", make_fastapi_endpoint(probirka))

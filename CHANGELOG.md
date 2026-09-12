@@ -8,7 +8,7 @@
 - `CallableProbe` is exported from the `probirka` package; names that need a third-party package (probes, `make_*` adapters) are resolved lazily and are not part of `__all__`, so `from probirka import *` works with a bare install
 
 ### Changed
-- Framework adapters moved to `probirka.ext.fastapi`, `probirka.ext.aiohttp`, `probirka.ext.django`. `probirka.make_fastapi_endpoint`, `probirka.make_aiohttp_endpoint` and `probirka.make_django_view` still work and are resolved lazily; when the framework is missing they raise an `ImportError` naming the package instead of an `AttributeError`
+- Framework adapter modules are private now (`probirka._ext.*`); `make_fastapi_endpoint`, `make_aiohttp_endpoint` and `make_django_view` are imported from `probirka` as before, resolved lazily; when the framework is missing they raise an `ImportError` naming the package instead of an `AttributeError`
 - `probirka` stays dependency-free; client libraries and frameworks are installed separately (no extras)
 
 ## [0.6.1] - 2026-09-11

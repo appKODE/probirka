@@ -11,7 +11,7 @@ from aiohttp.test_utils import TestClient, TestServer
 
 from probirka import Probirka
 from probirka._results import ProbirkaResult, ProbeResult
-from probirka.ext.aiohttp import make_aiohttp_endpoint
+from probirka import make_aiohttp_endpoint
 from tests.helpers import FailureProbe, SlowProbe, SuccessProbe
 
 

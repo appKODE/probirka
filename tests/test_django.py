@@ -28,7 +28,7 @@ from django.http import HttpRequest, HttpResponse
 from django.test import Client
 from django.urls import clear_url_caches, path
 
-from probirka.ext.django import make_django_view
+from probirka import make_django_view
 
 # Django resolves ROOT_URLCONF to this module and reads this symbol by name
 urlpatterns: List[object] = []

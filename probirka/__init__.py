@@ -17,9 +17,9 @@ if TYPE_CHECKING:
     from probirka._probes._postgres_asyncpg import PostgresAsyncpgProbe as PostgresAsyncpgProbe
     from probirka._probes._rabbitmq_aiopika import RabbitmqAiopikaProbe as RabbitmqAiopikaProbe
     from probirka._probes._redis import RedisProbe as RedisProbe
-    from probirka.ext.aiohttp import make_aiohttp_endpoint as make_aiohttp_endpoint
-    from probirka.ext.django import make_django_view as make_django_view
-    from probirka.ext.fastapi import make_fastapi_endpoint as make_fastapi_endpoint
+    from probirka._ext.aiohttp import make_aiohttp_endpoint as make_aiohttp_endpoint
+    from probirka._ext.django import make_django_view as make_django_view
+    from probirka._ext.fastapi import make_fastapi_endpoint as make_fastapi_endpoint
 
 __title__ = 'probirka'
 __version__ = '0.0.0'
@@ -59,9 +59,9 @@ _LAZY: Dict[str, Tuple[str, str]] = {
     'PostgresAsyncpgProbe': ('probirka._probes._postgres_asyncpg', 'asyncpg'),
     'RabbitmqAiopikaProbe': ('probirka._probes._rabbitmq_aiopika', 'aio-pika'),
     'RedisProbe': ('probirka._probes._redis', 'redis'),
-    'make_aiohttp_endpoint': ('probirka.ext.aiohttp', 'aiohttp'),
-    'make_django_view': ('probirka.ext.django', 'django'),
-    'make_fastapi_endpoint': ('probirka.ext.fastapi', 'fastapi'),
+    'make_aiohttp_endpoint': ('probirka._ext.aiohttp', 'aiohttp'),
+    'make_django_view': ('probirka._ext.django', 'django'),
+    'make_fastapi_endpoint': ('probirka._ext.fastapi', 'fastapi'),
 }
 
 

@@ -6,7 +6,7 @@ from fastapi import FastAPI, status
 from fastapi.testclient import TestClient
 
 from probirka import Probirka
-from probirka.ext.fastapi import make_fastapi_endpoint
+from probirka import make_fastapi_endpoint
 from tests.helpers import FailureProbe, SlowProbe, SuccessProbe
 
 
