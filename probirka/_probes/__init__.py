@@ -63,6 +63,7 @@ class ProbeBase(ABC):
         timeout: int | None = None,
         success_ttl: int | timedelta | None = None,
         failed_ttl: int | timedelta | None = None,
+        allow_failure: bool = False,
     ) -> None:
         """
         Initialize the probe.
@@ -71,8 +72,11 @@ class ProbeBase(ABC):
         :param timeout: The timeout for the probe.
         :param success_ttl: Cache duration for successful results. If None, successful results are not cached.
         :param failed_ttl: Cache duration for failed results. If None, failed results are not cached.
+        :param allow_failure: If True, a failure of this probe does not affect the overall
+            :attr:`ProbirkaResult.ok`; the failure is still visible in the probe's own result.
         """
         self._timeout = timeout
+        self._allow_failure = allow_failure
         self._name = name or self.__class__.__name__
         self._success_ttl = timedelta(seconds=success_ttl) if isinstance(success_ttl, int) else success_ttl
         self._failed_ttl = timedelta(seconds=failed_ttl) if isinstance(failed_ttl, int) else failed_ttl
@@ -90,6 +94,17 @@ class ProbeBase(ABC):
         :return: The name of the probe.
         """
         return self._name
+
+    @property
+    def allow_failure(
+        self,
+    ) -> bool:
+        """
+        Whether this probe may fail without affecting the overall result.
+
+        :return: The ``allow_failure`` setting of the probe.
+        """
+        return self._allow_failure
 
     def add_info(
         self,
@@ -147,6 +162,7 @@ class ProbeBase(ABC):
                 error=self._last_result.error,
                 info=self._last_result.info,
                 cached=True,
+                allow_failure=self._allow_failure,
             )
 
         started_at = datetime.now(UTC).astimezone()
@@ -173,6 +189,7 @@ class ProbeBase(ABC):
             error=error,
             info=self._info,
             cached=False if use_cache else None,
+            allow_failure=self._allow_failure,
         )
 
         if use_cache:
@@ -203,6 +220,7 @@ class CallableProbe(ProbeBase):
         timeout: int | None = None,
         success_ttl: int | timedelta | None = None,
         failed_ttl: int | timedelta | None = None,
+        allow_failure: bool = False,
     ) -> None:
         """
         Initialize the probe.
@@ -213,6 +231,7 @@ class CallableProbe(ProbeBase):
         :param timeout: The timeout for the probe.
         :param success_ttl: Cache duration for successful results. If None, successful results are not cached.
         :param failed_ttl: Cache duration for failed results. If None, failed results are not cached.
+        :param allow_failure: If True, a failure of this probe does not affect the overall result.
         """
         self._func = func
         super().__init__(
@@ -220,6 +239,7 @@ class CallableProbe(ProbeBase):
             timeout=timeout,
             success_ttl=success_ttl,
             failed_ttl=failed_ttl,
+            allow_failure=allow_failure,
         )
 
     async def _check(

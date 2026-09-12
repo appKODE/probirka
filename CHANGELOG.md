@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- `allow_failure` for non-critical probes, named after the GitLab CI option: `ProbeBase(allow_failure=True)`, `@probirka.add(allow_failure=True)` and the same keyword on every ready-made probe. Such a probe runs and is reported as usual, but its failure or timeout does not affect the top-level `ok`, so HTTP integrations keep returning `success_code`
+- Group-level override: `add_probes(..., groups='external', allow_failure=True)` (or `False`) applies to every probe of the group, replacing the probes' own setting; `None` (default) keeps it. A probe run through several sources (the required list, several groups) is allowed to fail only if every source allows it. Passing `allow_failure` without `groups` raises `ValueError`
+- `ProbeResult.allow_failure` (also in `to_dict()` and the HTTP JSON) with the effective value for the run
+
+### Changed
+- `ProbirkaResult.ok` is `True` when every probe without `allow_failure` passed; the overall timeout sets `ok=False` only if a probe without `allow_failure` did not finish, while `error` still reports the timeout
+
 ## [0.7.0] - 2026-09-12
 
 ### Added

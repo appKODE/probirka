@@ -222,6 +222,47 @@ Checks can be organized into required and optional groups. Checks without groups
    if __name__ == "__main__":
        asyncio.run(main())
 
+Allowing Failures
+-----------------
+
+Not every dependency is critical. Mark a probe with ``allow_failure=True`` (the name
+follows the same option in GitLab CI) and its failure no longer affects the top-level
+``ok``, so the HTTP integrations keep returning ``success_code``. The probe still runs
+and its result is reported in ``checks`` with ``allow_failure`` set to ``True``:
+
+.. code-block:: python
+
+   from probirka import Probirka, TcpProbe
+
+   probirka = Probirka()
+
+   @probirka.add(name="cache", allow_failure=True)
+   async def check_cache():
+       return await redis.ping()
+
+   probirka.add_probes(TcpProbe("smtp.internal", 25, name="smtp", allow_failure=True))
+
+   results = await probirka.run()
+   results.ok  # True even if cache and smtp failed
+
+The flag can also be set for a whole group. It then overrides the probes' own setting
+in both directions; ``None`` (the default) leaves every probe as it is:
+
+.. code-block:: python
+
+   probirka.add_probes(partner_probe, smtp_probe, groups="external", allow_failure=True)
+
+   await probirka.run(with_groups="external")  # partner and smtp may fail
+
+When a probe is run through several sources at once (the required list and a group,
+or two groups), it is allowed to fail only if every source allows it — a strict source
+always wins. Passing ``allow_failure`` to ``add_probes`` without ``groups`` raises
+``ValueError``: for required probes set the flag on the probe itself.
+
+The overall ``run(timeout=...)`` follows the same rule: if only probes with
+``allow_failure`` did not finish in time, ``ok`` stays ``True`` while ``error`` still
+reports the timeout.
+
 Setting Timeouts
 ----------------
 
@@ -248,7 +289,7 @@ wait is cancelled.
 You can also set an overall timeout for ``Probirka.run()``. It never raises: probes
 that did not finish in time are reported as failed with a ``TimeoutError`` message,
 finished probes keep their real results, and the whole ``ProbirkaResult`` gets
-``ok=False`` with ``error`` set:
+``error`` set. ``ok`` becomes ``False`` unless every unfinished probe has ``allow_failure``:
 
 .. code-block:: python
 

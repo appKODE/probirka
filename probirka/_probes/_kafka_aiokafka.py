@@ -30,6 +30,7 @@ class KafkaAiokafkaProbe(ClientProbeBase):
         timeout: int | None = None,
         success_ttl: int | timedelta | None = None,
         failed_ttl: int | timedelta | None = None,
+        allow_failure: bool = False,
     ) -> None:
         """
         Initialize the probe.
@@ -41,9 +42,16 @@ class KafkaAiokafkaProbe(ClientProbeBase):
         :param timeout: The timeout for the probe.
         :param success_ttl: Cache duration for successful results.
         :param failed_ttl: Cache duration for failed results.
+        :param allow_failure: If True, a failure of this probe does not affect the overall result.
         """
         require_exactly_one(client=client, bootstrap_servers=bootstrap_servers)
-        super().__init__(name=name, timeout=timeout, success_ttl=success_ttl, failed_ttl=failed_ttl)
+        super().__init__(
+            name=name,
+            timeout=timeout,
+            success_ttl=success_ttl,
+            failed_ttl=failed_ttl,
+            allow_failure=allow_failure,
+        )
         self._client = client
         self._bootstrap_servers = bootstrap_servers
 

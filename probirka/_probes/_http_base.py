@@ -28,6 +28,7 @@ class HttpProbeBase(ClientProbeBase):
         timeout: int | None = None,
         success_ttl: int | timedelta | None = None,
         failed_ttl: int | timedelta | None = None,
+        allow_failure: bool = False,
     ) -> None:
         """
         Initialize the probe.
@@ -42,8 +43,15 @@ class HttpProbeBase(ClientProbeBase):
         :param timeout: The timeout for the probe.
         :param success_ttl: Cache duration for successful results.
         :param failed_ttl: Cache duration for failed results.
+        :param allow_failure: If True, a failure of this probe does not affect the overall result.
         """
-        super().__init__(name=name, timeout=timeout, success_ttl=success_ttl, failed_ttl=failed_ttl)
+        super().__init__(
+            name=name,
+            timeout=timeout,
+            success_ttl=success_ttl,
+            failed_ttl=failed_ttl,
+            allow_failure=allow_failure,
+        )
         self._url = url
         self._method = method
         self._expected_status = frozenset([expected_status] if isinstance(expected_status, int) else expected_status)
