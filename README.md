@@ -55,9 +55,16 @@ Importable from `probirka`: `TcpProbe` (no dependencies), `PostgresAsyncpgProbe`
 
 ```python
 from fastapi import FastAPI
-from probirka import make_fastapi_endpoint
+from probirka import Probirka, PostgresAsyncpgProbe, RedisProbe, make_fastapi_endpoint
 
 app = FastAPI()
+
+probirka = Probirka()
+probirka.add_probes(
+    PostgresAsyncpgProbe(lambda: app.state.pool, name="postgres", timeout=2),  # pool created in lifespan
+    RedisProbe(url="redis://cache:6379/0", name="redis", timeout=1),
+)
+
 app.add_api_route("/health", make_fastapi_endpoint(probirka))
 ```
 
