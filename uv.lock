@@ -1313,6 +1313,7 @@ dev = [
     { name = "sphinx-autodoc-typehints", version = "3.6.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "sphinx-autodoc-typehints", version = "3.13.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "sphinx-rtd-theme" },
+    { name = "starlette" },
     { name = "ty" },
 ]
 
@@ -1341,6 +1342,7 @@ dev = [
     { name = "sphinx", specifier = ">=7.1.2" },
     { name = "sphinx-autodoc-typehints", specifier = ">=2.0.1" },
     { name = "sphinx-rtd-theme", specifier = ">=3.0.2" },
+    { name = "starlette", specifier = ">=0.37" },
     { name = "ty", specifier = ">=0.0.80" },
 ]
 

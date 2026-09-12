@@ -7,6 +7,7 @@
 - `MissingDependencyError` (an `ImportError`) raised on access to a probe or adapter whose client library is not installed; a library that is installed but too old keeps its original error
 - `ProbeFailure` — exception for "the service answered, but not in a healthy way"; its message goes to `ProbeResult.error`
 - `CallableProbe` is exported from the `probirka` package; names that need a third-party package (probes, `make_*` adapters) are resolved lazily and listed in `__all__` only when their package is installed, so `from probirka import *` brings what you can use and works with a bare install
+- `make_asgi_app` — a generic ASGI 3 application serving the same JSON body and the same options as the framework adapters. It needs no third-party package at all, so unlike the other `make_*` names it is always importable: register it as a route (`Route('/health', app, methods=['GET', 'HEAD'])` in Starlette), mount it (`app.mount(...)` in FastAPI, `asgi('/health', is_mount=True)` in Litestar), or serve it on its own port with `uvicorn health:health_app`. It answers whatever path reaches it, serves `GET` and `HEAD` only (`405` with an `allow` header otherwise) and acknowledges the lifespan protocol. See [Serving the health endpoint](https://appkode.github.io/probirka/integration.html)
 
 ### Changed
 - Minimum supported Python is 3.11; the test matrix covers 3.11 through 3.15

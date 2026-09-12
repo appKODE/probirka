@@ -4,6 +4,7 @@ from importlib import import_module
 from importlib.util import find_spec
 from typing import TYPE_CHECKING, Any
 
+from probirka._ext.asgi import make_asgi_app
 from probirka._probes import CallableProbe, Probe, ProbeBase
 from probirka._probes._common import ClientOrFactory, ProbeFailure
 from probirka._probes._tcp import TcpProbe
@@ -74,7 +75,8 @@ def _installed(import_name: str) -> bool:
 
 # Names that need no third-party package, plus the lazily resolved names whose package is
 # installed. So ``from probirka import *`` brings the adapters and probes you can actually use
-# and still works with nothing but probirka installed.
+# and still works with nothing but probirka installed. ``make_asgi_app`` is in the first group:
+# it speaks the ASGI protocol directly, so it needs no framework to be installed.
 __all__ = [
     'CallableProbe',
     'ClientOrFactory',
@@ -86,6 +88,7 @@ __all__ = [
     'Probirka',
     'ProbirkaResult',
     'TcpProbe',
+    'make_asgi_app',
 ]
 __all__ += [name for name, (_, import_name, _) in sorted(_LAZY.items()) if _installed(import_name)]
 

@@ -80,10 +80,17 @@ All probes below are importable from the ``probirka`` package, e.g. ``from probi
    :members:
    :show-inheritance:
 
-Framework Adapters
+Serving the result
 ------------------
 
 Importable from the ``probirka`` package, e.g. ``from probirka import make_fastapi_endpoint``.
+
+Generic ASGI app
+~~~~~~~~~~~~~~~~
+
+.. automodule:: probirka._ext.asgi
+   :members: make_asgi_app
+   :show-inheritance:
 
 FastAPI
 ~~~~~~~
