@@ -4,7 +4,7 @@ from typing import Any, List, Optional, Union
 from aiokafka.admin import AIOKafkaAdminClient
 
 from probirka._probes import ProbeBase
-from probirka.probes._common import ClientOrFactory, require_exactly_one, resolve
+from probirka._probes._common import ClientOrFactory, require_exactly_one, resolve
 
 
 class KafkaAiokafkaProbe(ProbeBase):

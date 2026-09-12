@@ -1,18 +1,18 @@
 from datetime import timedelta
 from typing import Any, Optional, Union
 
-import aio_pika
+from redis.asyncio import Redis
 
 from probirka._probes import ProbeBase
-from probirka.probes._common import ClientOrFactory, ProbeFailure, require_exactly_one, resolve
+from probirka._probes._common import ClientOrFactory, ProbeFailure, require_exactly_one, resolve
 
 
-class RabbitmqAiopikaProbe(ProbeBase):
+class RedisProbe(ProbeBase):
     """
-    Check RabbitMQ availability with `aio-pika <https://github.com/mosquito/aio-pika>`_.
+    Check Redis availability with `redis-py <https://github.com/redis/redis-py>`_ (``redis.asyncio``).
 
-    Opens and closes a channel on an existing connection (or a callable returning one), or on a
-    short-lived connection established from ``url``. A closed existing connection is a failure.
+    Sends ``PING`` to an existing :class:`redis.asyncio.Redis` client (or a callable returning one),
+    or to a short-lived client created from ``url``.
     """
 
     def __init__(
@@ -28,8 +28,8 @@ class RabbitmqAiopikaProbe(ProbeBase):
         """
         Initialize the probe.
 
-        :param client: ``aio_pika`` connection (``AbstractConnection``) or a callable returning one.
-        :param url: AMQP URL, e.g. ``amqp://guest:guest@localhost/``. Mutually exclusive with ``client``.
+        :param client: ``redis.asyncio.Redis`` (or cluster/sentinel client with ``ping``) or a callable returning one.
+        :param url: Redis URL, e.g. ``redis://localhost:6379/0``. Mutually exclusive with ``client``.
         :param name: The name of the probe. Defaults to the class name.
         :param timeout: The timeout for the probe.
         :param success_ttl: Cache duration for successful results.
@@ -41,19 +41,20 @@ class RabbitmqAiopikaProbe(ProbeBase):
         self._url = url
 
     @staticmethod
-    async def _open_channel(connection: Any) -> None:
-        if connection.is_closed:
-            raise ProbeFailure('connection is closed')
-        channel = await connection.channel()
-        await channel.close()
+    async def _ping(client: Any) -> None:
+        if not await client.ping():
+            raise ProbeFailure('PING failed')
 
     async def _check(self) -> Optional[bool]:
         if self._client is not None:
-            await self._open_channel(resolve(self._client))
+            await self._ping(resolve(self._client))
             return True
-        connection = await aio_pika.connect(self._url)
+        assert self._url is not None
+        client = Redis.from_url(self._url)
         try:
-            await self._open_channel(connection)
+            await self._ping(client)
         finally:
-            await connection.close()
+            # redis>=5 has aclose(); close() is the redis 4.x name
+            close = getattr(client, 'aclose', None) or client.close
+            await close()
         return True

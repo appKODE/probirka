@@ -21,8 +21,7 @@ Probirka has no dependencies. Ready-made probes and framework adapters use clien
 
 ```python
 import asyncio
-from probirka import Probirka
-from probirka.probes import TcpProbe
+from probirka import Probirka, TcpProbe
 
 probirka = Probirka(success_ttl=30)
 probirka.add_info("version", "1.0.0")
@@ -48,7 +47,7 @@ Probes return `True`/`None` on success and `False` on failure; exceptions and ti
 
 ## Ready-made Probes
 
-`probirka.probes`: `TcpProbe`, `PostgresAsyncpgProbe`, `RedisProbe`, `HttpHttpxProbe`, `HttpHttpx2Probe`, `HttpAiohttpProbe`, `KafkaAiokafkaProbe`, `RabbitmqAiopikaProbe`, `MongoPymongoProbe`, `MongoMotorProbe`. Each takes an existing client of your application (or a function returning it) or a connection string. See [the docs](https://appkode.github.io/probirka/probes.html).
+Importable from `probirka`: `TcpProbe`, `PostgresAsyncpgProbe`, `RedisProbe`, `HttpHttpxProbe`, `HttpHttpx2Probe`, `HttpAiohttpProbe`, `KafkaAiokafkaProbe`, `RabbitmqAiopikaProbe`, `MongoPymongoProbe`, `MongoMotorProbe`. Each takes an existing client of your application (or a function returning it) or a connection string. See [the docs](https://appkode.github.io/probirka/probes.html).
 
 ## Framework Adapters
 

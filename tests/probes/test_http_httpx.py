@@ -6,7 +6,7 @@ pytest.importorskip('httpx')
 
 import httpx
 
-from probirka.probes import HttpHttpxProbe
+from probirka import HttpHttpxProbe
 
 
 def make_client(status: int, seen: list) -> httpx.AsyncClient:  # type: ignore[type-arg]

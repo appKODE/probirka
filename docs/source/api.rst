@@ -22,55 +22,57 @@ Core Classes
 Ready-made Probes
 -----------------
 
-.. automodule:: probirka.probes._common
+All probes below are importable from the ``probirka`` package, e.g. ``from probirka import RedisProbe``.
+
+.. automodule:: probirka._probes._common
    :members: ProbeFailure, resolve
    :show-inheritance:
 
-.. automodule:: probirka.probes._tcp
+.. automodule:: probirka._probes._tcp
    :members:
    :show-inheritance:
 
-.. automodule:: probirka.probes._postgres_asyncpg
+.. automodule:: probirka._probes._postgres_asyncpg
    :members:
    :show-inheritance:
 
-.. automodule:: probirka.probes._redis
+.. automodule:: probirka._probes._redis
    :members:
    :show-inheritance:
 
-.. automodule:: probirka.probes._http_base
+.. automodule:: probirka._probes._http_base
    :members:
    :show-inheritance:
 
-.. automodule:: probirka.probes._http_httpx
+.. automodule:: probirka._probes._http_httpx
    :members:
    :show-inheritance:
 
-.. automodule:: probirka.probes._http_httpx2
+.. automodule:: probirka._probes._http_httpx2
    :members:
    :show-inheritance:
 
-.. automodule:: probirka.probes._http_aiohttp
+.. automodule:: probirka._probes._http_aiohttp
    :members:
    :show-inheritance:
 
-.. automodule:: probirka.probes._kafka_aiokafka
+.. automodule:: probirka._probes._kafka_aiokafka
    :members:
    :show-inheritance:
 
-.. automodule:: probirka.probes._rabbitmq_aiopika
+.. automodule:: probirka._probes._rabbitmq_aiopika
    :members:
    :show-inheritance:
 
-.. automodule:: probirka.probes._mongo_base
+.. automodule:: probirka._probes._mongo_base
    :members:
    :show-inheritance:
 
-.. automodule:: probirka.probes._mongo_pymongo
+.. automodule:: probirka._probes._mongo_pymongo
    :members:
    :show-inheritance:
 
-.. automodule:: probirka.probes._mongo_motor
+.. automodule:: probirka._probes._mongo_motor
    :members:
    :show-inheritance:
 

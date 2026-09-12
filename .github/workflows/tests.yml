@@ -42,7 +42,7 @@ jobs:
       - run: uv sync --dev
       - run: just tests
       # the core must import without a single third-party package installed
-      - run: uv run --isolated --no-project --with . python -c "import probirka, probirka.probes"
+      - run: uv run --isolated --no-project --with . python -c "import probirka; from probirka import *"
       - uses: coverallsapp/github-action@master
         with:
           github-token: ${{ secrets.github_token }}

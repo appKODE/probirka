@@ -3,7 +3,7 @@ from datetime import timedelta
 from typing import Any, Optional, Union
 
 from probirka._probes import ProbeBase
-from probirka.probes._common import ClientOrFactory, require_exactly_one, resolve
+from probirka._probes._common import ClientOrFactory, require_exactly_one, resolve
 
 
 class MongoProbeBase(ProbeBase):

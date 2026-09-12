@@ -136,7 +136,7 @@ There are multiple ways to add probes to a Probirka instance:
 
 .. code-block:: python
 
-   from probirka.probes import RedisProbe
+   from probirka import RedisProbe
 
    probirka.add_probes(RedisProbe(url="redis://localhost:6379/0", timeout=1), groups=["cache"])
 

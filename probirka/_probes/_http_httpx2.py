@@ -2,7 +2,7 @@ from typing import Any
 
 import httpx2
 
-from probirka.probes._http_base import HttpProbeBase
+from probirka._probes._http_base import HttpProbeBase
 
 
 class HttpHttpx2Probe(HttpProbeBase):

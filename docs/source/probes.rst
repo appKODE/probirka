@@ -1,12 +1,14 @@
 Ready-made Probes
 =================
 
-``probirka.probes`` ships probes for common infrastructure dependencies. Every one of them is a
-plain :class:`probirka.ProbeBase` subclass, so it takes the usual ``name``, ``timeout``,
-``success_ttl`` and ``failed_ttl`` arguments and is registered with ``add_probes``.
+Probirka ships probes for common infrastructure dependencies, importable straight from the
+``probirka`` package. Every one of them is a plain :class:`probirka.ProbeBase` subclass, so it takes
+the usual ``name``, ``timeout``, ``success_ttl`` and ``failed_ttl`` arguments and is registered with
+``add_probes``.
 
 ``probirka`` itself has no dependencies. Each probe needs its client library, which you install
-separately; accessing a probe whose library is missing raises an ``ImportError`` naming the package:
+separately; the probe is resolved on first access, and a missing library raises an ``ImportError``
+naming the package:
 
 .. code-block:: text
 
@@ -63,7 +65,7 @@ Passing the client reuses your pool and its configuration, and the probe never c
    import asyncpg
    from redis.asyncio import Redis
    from probirka import Probirka
-   from probirka.probes import PostgresAsyncpgProbe, RedisProbe
+   from probirka import PostgresAsyncpgProbe, RedisProbe
 
    pool = await asyncpg.create_pool(dsn="postgresql://app@db/app")
    redis = Redis.from_url("redis://cache:6379/0")
@@ -110,7 +112,7 @@ The HTTP probes take the URL as the first argument and compare the response stat
 .. code-block:: python
 
    import httpx
-   from probirka.probes import HttpHttpxProbe
+   from probirka import HttpHttpxProbe
 
    probirka.add_probes(
        HttpHttpxProbe("https://api.example.com/health", name="api", timeout=3),
@@ -131,7 +133,7 @@ so give it a meaningful one when you add several:
 
 .. code-block:: python
 
-   from probirka.probes import TcpProbe
+   from probirka import TcpProbe
 
    probirka.add_probes(TcpProbe("smtp.example.com", 25, name="smtp", timeout=2))
 
@@ -143,7 +145,7 @@ A probe fails in two ways, both ending up in :attr:`ProbeResult.error`:
 * the client library raises: the error is ``'<ExceptionType>: <message>'``, e.g.
   ``'ConnectionRefusedError: [Errno 61] Connect call failed'``;
 * the service answered but not in a healthy way: the probe raises
-  :class:`probirka.probes.ProbeFailure`, e.g. ``'ProbeFailure: unexpected status 503'`` or
+  :class:`probirka.ProbeFailure`, e.g. ``'ProbeFailure: unexpected status 503'`` or
   ``'ProbeFailure: PING failed'``.
 
 The probe ``timeout`` covers the whole check, including connecting when a connection string is used.

@@ -6,7 +6,7 @@ pytest.importorskip('redis')
 
 import redis.asyncio
 
-from probirka.probes import RedisProbe
+from probirka import RedisProbe
 
 
 def test_requires_client_or_url() -> None:

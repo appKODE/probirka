@@ -7,8 +7,8 @@ pytest.importorskip('aiokafka')
 import aiokafka.admin
 from aiokafka.errors import KafkaConnectionError
 
-import probirka.probes._kafka_aiokafka as kafka_module
-from probirka.probes import KafkaAiokafkaProbe
+import probirka._probes._kafka_aiokafka as kafka_module
+from probirka import KafkaAiokafkaProbe
 
 
 def test_requires_client_or_bootstrap_servers() -> None:

@@ -2,7 +2,7 @@ from typing import Any
 
 import aiohttp
 
-from probirka.probes._http_base import HttpProbeBase
+from probirka._probes._http_base import HttpProbeBase
 
 
 class HttpAiohttpProbe(HttpProbeBase):

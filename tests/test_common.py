@@ -2,7 +2,7 @@ from functools import partial
 
 import pytest
 
-from probirka.probes._common import only_set, require_exactly_one, resolve
+from probirka._probes._common import only_set, require_exactly_one, resolve
 
 
 def test_resolve_returns_instance_as_is() -> None:

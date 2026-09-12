@@ -9,7 +9,7 @@ import pytest_asyncio
 from aiohttp import web
 from aiohttp.test_utils import TestServer
 
-from probirka.probes import HttpAiohttpProbe
+from probirka import HttpAiohttpProbe
 
 
 @pytest_asyncio.fixture

@@ -6,8 +6,8 @@ pytest.importorskip('pymongo')
 
 from pymongo.errors import ServerSelectionTimeoutError
 
-import probirka.probes._mongo_pymongo as mongo_module
-from probirka.probes import MongoPymongoProbe
+import probirka._probes._mongo_pymongo as mongo_module
+from probirka import MongoPymongoProbe
 
 
 def make_client(side_effect: object = None) -> MagicMock:

@@ -3,7 +3,7 @@ from datetime import timedelta
 from typing import Any, AsyncContextManager, Collection, Mapping, Optional, Union
 
 from probirka._probes import ProbeBase
-from probirka.probes._common import ClientOrFactory, ProbeFailure, resolve
+from probirka._probes._common import ClientOrFactory, ProbeFailure, resolve
 
 
 class HttpProbeBase(ProbeBase):

@@ -7,7 +7,7 @@ pytest.importorskip('asyncpg')
 
 import asyncpg
 
-from probirka.probes import PostgresAsyncpgProbe
+from probirka import PostgresAsyncpgProbe
 
 
 def test_requires_client_or_dsn() -> None:

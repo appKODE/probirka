@@ -3,7 +3,7 @@ import socket
 
 import pytest
 
-from probirka.probes import TcpProbe
+from probirka import TcpProbe
 
 
 @pytest.mark.asyncio

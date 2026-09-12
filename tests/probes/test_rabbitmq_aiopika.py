@@ -6,7 +6,7 @@ pytest.importorskip('aio_pika')
 
 import aio_pika
 
-from probirka.probes import RabbitmqAiopikaProbe
+from probirka import RabbitmqAiopikaProbe
 
 
 def make_connection(is_closed: bool = False) -> MagicMock:
