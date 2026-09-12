@@ -1,12 +1,15 @@
-import asyncio
 from datetime import datetime
 from typing import Callable, List
 
-import django
 import pytest
+
+pytest.importorskip('django')
+
+import django
 from django.conf import settings
 
-from probirka import Probirka, ProbeBase
+from probirka import Probirka
+from tests.helpers import FailureProbe, SlowProbe, SuccessProbe
 
 if not settings.configured:
     settings.configure(
@@ -25,28 +28,13 @@ from django.http import HttpRequest, HttpResponse
 from django.test import Client
 from django.urls import clear_url_caches, path
 
-from probirka._django import make_django_view
+from probirka import make_django_view
 
 # Django resolves ROOT_URLCONF to this module and reads this symbol by name
 urlpatterns: List[object] = []
 
 View = Callable[[HttpRequest], object]
 
-
-class SuccessProbe(ProbeBase):
-    async def _check(self) -> bool:
-        return True
-
-
-class FailureProbe(ProbeBase):
-    async def _check(self) -> bool:
-        return False
-
-
-class SlowProbe(ProbeBase):
-    async def _check(self) -> bool:
-        await asyncio.sleep(1)
-        return True
 
 
 @pytest.fixture

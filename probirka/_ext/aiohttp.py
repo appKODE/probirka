@@ -4,7 +4,7 @@ from typing import Any, Callable, Coroutine, List, Optional, Union
 
 from aiohttp import web
 
-from probirka import Probirka
+from probirka._probirka import Probirka
 
 
 def make_aiohttp_endpoint(

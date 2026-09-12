@@ -1,31 +1,19 @@
-import asyncio
 import json
 from datetime import datetime, timedelta
 from typing import AsyncGenerator
 
 import pytest
+
+pytest.importorskip('aiohttp')
+
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
 
-from probirka import Probirka, ProbeBase
-from probirka._aiohttp import make_aiohttp_endpoint
+from probirka import Probirka
 from probirka._results import ProbirkaResult, ProbeResult
+from probirka import make_aiohttp_endpoint
+from tests.helpers import FailureProbe, SlowProbe, SuccessProbe
 
-
-class SuccessProbe(ProbeBase):
-    async def _check(self) -> bool:
-        return True
-
-
-class FailureProbe(ProbeBase):
-    async def _check(self) -> bool:
-        return False
-
-
-class SlowProbe(ProbeBase):
-    async def _check(self) -> bool:
-        await asyncio.sleep(1)
-        return True
 
 
 @pytest.fixture

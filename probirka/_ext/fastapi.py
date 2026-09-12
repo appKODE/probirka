@@ -4,7 +4,7 @@ from fastapi import status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, Response
 
-from probirka import Probirka
+from probirka._probirka import Probirka
 
 
 def make_fastapi_endpoint(

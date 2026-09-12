@@ -7,6 +7,9 @@ upgrade:
 fmt:
     uv run ruff format {{ SOURCE_PATH }}
 
+fmt-check:
+    uv run ruff format --check {{ SOURCE_PATH }}
+
 lint:
     uv run ruff check {{ SOURCE_PATH }}
 

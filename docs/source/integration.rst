@@ -1,6 +1,11 @@
 Framework Integration
 =====================
 
+The adapters are thin wrappers over :meth:`probirka.Probirka.run`: they run the probes, map ``ok``
+to a status code and return :meth:`probirka.ProbirkaResult.to_dict` as JSON. They are importable
+from the ``probirka`` package and resolved on first access; the framework itself must be installed,
+otherwise an ``ImportError`` names the package.
+
 FastAPI
 -------
 

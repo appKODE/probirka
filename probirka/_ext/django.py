@@ -2,7 +2,7 @@ from typing import Any, Callable, Coroutine, List, Optional, Union
 
 from django.http import HttpRequest, HttpResponse, HttpResponseNotAllowed, JsonResponse
 
-from probirka import Probirka
+from probirka._probirka import Probirka
 
 _ALLOWED_METHODS = ('GET', 'HEAD')
 
