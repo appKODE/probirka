@@ -453,6 +453,8 @@ app.add_api_route(
 )
 ```
 
+A complete example with liveness, readiness and startup probes and an authenticated report is in the [documentation](https://appkode.github.io/probirka/integration.html#kubernetes-probes).
+
 ### aiohttp
 
 ```python
