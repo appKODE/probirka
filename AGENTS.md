@@ -10,6 +10,11 @@ runtime dependencies. Ready-made probes for client libraries (Redis, PostgreSQL,
 and adapters for HTTP frameworks (FastAPI, aiohttp, Django, plain ASGI) ship in the same package
 but are imported only when used.
 
+The core is the flat modules of the package root: `_probe`, `_probirka`, `_results`, `_redact`,
+`_lazy`. It is complete on its own: a custom probe needs nothing but `ProbeBase`, `ProbeFailure` and
+`Probirka`. The subpackages `_probes` (ready-made probes) and `_ext` (framework adapters) are
+additions built on the core; the core never imports them.
+
 ## Map
 
 | Path | Role |
@@ -18,10 +23,10 @@ but are imported only when used.
 | `probirka/_lazy.py` | Registry of the names that need a third-party package, the PEP 562 hooks, `MissingDependencyError` |
 | `probirka/_redact.py` | Secret masking, stdlib only |
 | `probirka/_results.py` | `ProbeResult`, `ProbirkaResult` |
+| `probirka/_probe.py` | `Probe` protocol, `ProbeBase`, `CallableProbe`, `ProbeFailure` |
 | `probirka/_probirka.py` | `Probirka`: registration, groups, concurrency, timeouts |
 | `probirka/_probes/__init__.py` | Barrel: dependency-free probe names in `__all__`, the others under `TYPE_CHECKING` |
-| `probirka/_probes/_base.py` | `Probe` protocol, `ProbeBase`, `CallableProbe` |
-| `probirka/_probes/_common.py` | `ProbeFailure`, `ClientOrFactory`, constructor helpers |
+| `probirka/_probes/_common.py` | `ClientOrFactory` and the constructor helpers of the client probes |
 | `probirka/_probes/_client_base.py`, `_http_base.py`, `_mongo_base.py` | Base classes shared by the driver probes |
 | `probirka/_probes/_http_policy.py` | `HttpProbePolicy`, the SSRF protection of the HTTP probes, stdlib only |
 | `probirka/_probes/_tcp.py` | `TcpProbe`, the one ready-made probe without a client library |
@@ -55,26 +60,32 @@ but are imported only when used.
 
 ### Layers import downwards only
 
+The core:
+
 1. `_redact`, `_lazy` (import nothing from the package)
 2. `_results`
-3. `_probes/_base`, `_probes/_common`, `_probes/_http_policy`
-4. `_probes/_client_base`, `_probes/_tcp`, `_probirka`
-5. `_probes/_http_base`, `_probes/_mongo_base`, `_ext/_common`
-6. driver probes `_probes/_<library>.py`, adapters `_ext/asgi.py` and `_ext/<framework>.py`
-7. the barrels: `_probes/__init__.py`, `_ext/__init__.py`, and the package root
+3. `_probe`
+4. `_probirka`
 
-A module imports from its own layer or a lower one, never from a higher one. In particular:
-nothing inside the package imports the root `probirka`; `_probes/*` never import `_probirka` or
-`_ext`; `_ext/*` never import `_probes`.
+The additions:
+
+5. `_probes/_common`, `_probes/_http_policy`, `_probes/_client_base`, `_probes/_tcp`
+6. `_probes/_http_base`, `_probes/_mongo_base`, `_ext/_common`
+7. driver probes `_probes/_<library>.py`, adapters `_ext/asgi.py` and `_ext/<framework>.py`
+8. the barrels `_probes/__init__.py`, `_ext/__init__.py`, and the package root
+
+A module imports from its own layer or a lower one, never from a higher one. In particular: the
+core never imports `_probes` or `_ext`; nothing inside the package imports the root `probirka`;
+`_probes/*` never import `_probirka` or `_ext`; `_ext/*` never import `_probes`.
 
 ### `__init__.py` files only re-export
 
 - Allowed in an `__init__.py`: a module docstring, `import` and `from ... import`, a
   `TYPE_CHECKING` block of imports, `__all__`, package metadata dunders such as `__version__`.
 - Not allowed: classes, functions, constants, control flow. Code lives in a named module
-  (`_probes/_base.py`, not `_probes/__init__.py`).
+  (`_probe.py`, not `__init__.py`).
 - Inside a subpackage, siblings import each other by concrete module path
-  (`from probirka._probes._base import ProbeBase`), never through the subpackage `__init__`. A
+  (`from probirka._probes._common import resolve`), never through the subpackage `__init__`. A
   barrel imported by its own members is a circular import waiting to happen. Only the package
   root and the tests consume barrels.
 - A subpackage `__init__` re-exports its dependency-free names in `__all__`. The names that need a

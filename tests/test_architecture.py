@@ -8,13 +8,14 @@ import pytest
 PACKAGE = Path(__file__).resolve().parents[1] / 'probirka'
 MODULES = sorted(PACKAGE.rglob('*.py'))
 
-# layer -> packages it must never import (a leaf lists the whole package)
+# layer -> packages it must never import (a leaf lists the whole package); the core never imports the additions
 FORBIDDEN = {
     'probirka._lazy': ('probirka',),
     'probirka._redact': ('probirka',),
-    'probirka._results': ('probirka._probes', 'probirka._probirka', 'probirka._ext'),
+    'probirka._results': ('probirka._probe', 'probirka._probirka', 'probirka._probes', 'probirka._ext'),
+    'probirka._probe': ('probirka._probirka', 'probirka._probes', 'probirka._ext'),
+    'probirka._probirka': ('probirka._probes', 'probirka._ext'),
     'probirka._probes': ('probirka._probirka', 'probirka._ext'),
-    'probirka._probirka': ('probirka._ext',),
     'probirka._ext': ('probirka._probes',),
 }
 

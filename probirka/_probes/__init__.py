@@ -1,5 +1,5 @@
 """
-Probes (private): the base classes and the ready-made probes.
+Ready-made probes (private), built on the core in :mod:`probirka._probe`.
 
 Only the names that need no third-party package are re-exported at runtime. The probes that need
 a client library live in their own modules and are resolved lazily from the package root; they
@@ -11,8 +11,7 @@ runtime::
 
 from typing import TYPE_CHECKING
 
-from probirka._probes._base import CallableProbe, Probe, ProbeBase, ProbeCallable, format_error
-from probirka._probes._common import ClientOrFactory, ProbeFailure
+from probirka._probes._common import ClientOrFactory
 from probirka._probes._http_policy import HttpProbePolicy, HttpProbePolicyViolation
 from probirka._probes._tcp import TcpProbe
 
@@ -28,14 +27,8 @@ if TYPE_CHECKING:
     from probirka._probes._redis import RedisProbe as RedisProbe
 
 __all__ = [
-    'CallableProbe',
     'ClientOrFactory',
     'HttpProbePolicy',
     'HttpProbePolicyViolation',
-    'Probe',
-    'ProbeBase',
-    'ProbeCallable',
-    'ProbeFailure',
     'TcpProbe',
-    'format_error',
 ]

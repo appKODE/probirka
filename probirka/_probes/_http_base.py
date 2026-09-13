@@ -3,14 +3,16 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 from urllib.parse import SplitResult, urljoin
 
+from probirka._probe import ProbeFailure
 from probirka._probes._client_base import ClientProbeBase
-from probirka._probes._common import ClientOrFactory, ProbeFailure
 from probirka._probes._http_policy import HttpProbePolicy, HttpProbePolicyViolation, normalize_host
 from probirka._redact import mask_url, secrets_from_headers, secrets_from_url
 
 if TYPE_CHECKING:
     from collections.abc import Collection, Mapping
     from datetime import timedelta
+
+    from probirka._probes._common import ClientOrFactory
 
 _DEFAULT_POLICY = HttpProbePolicy()
 _SEE_OTHER = 303

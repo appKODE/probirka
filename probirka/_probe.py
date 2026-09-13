@@ -1,4 +1,4 @@
-"""The probe protocol, the base implementation and the callable wrapper."""
+"""The core a probe is built on: the protocol, the base implementation, the callable wrapper, the failure."""
 
 from __future__ import annotations
 
@@ -29,6 +29,15 @@ def format_error(exc: BaseException) -> str:
     """
     message = str(exc)
     return f'{type(exc).__name__}: {message}' if message else type(exc).__name__
+
+
+class ProbeFailure(Exception):
+    """
+    Raised by a probe when the dependency answered, but not the way a healthy one should.
+
+    Examples: Redis replied to ``PING`` with something other than ``True``, an HTTP endpoint
+    returned an unexpected status code. The message ends up in :attr:`ProbeResult.error`.
+    """
 
 
 class Probe(Protocol):

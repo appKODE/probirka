@@ -4,8 +4,9 @@ from typing import TYPE_CHECKING, Any
 
 from redis.asyncio import Redis
 
+from probirka._probe import ProbeFailure
 from probirka._probes._client_base import ClientProbeBase
-from probirka._probes._common import ClientOrFactory, ProbeFailure, require_exactly_one
+from probirka._probes._common import ClientOrFactory, require_exactly_one
 from probirka._redact import secrets_from_url
 
 if TYPE_CHECKING:

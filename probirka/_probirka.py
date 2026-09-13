@@ -7,7 +7,7 @@ from datetime import UTC, datetime, timedelta
 from time import monotonic
 from typing import TYPE_CHECKING, Any, TypeVar
 
-from probirka._probes._base import CallableProbe, Probe, ProbeCallable
+from probirka._probe import CallableProbe, Probe, ProbeCallable
 from probirka._results import ProbeResult, ProbirkaResult
 
 if TYPE_CHECKING:

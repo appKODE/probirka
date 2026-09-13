@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Any
 
-from probirka._probes._base import ProbeBase
+from probirka._probe import ProbeBase
 from probirka._probes._common import ClientOrFactory, resolve
 
 if TYPE_CHECKING:

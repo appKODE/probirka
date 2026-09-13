@@ -3,7 +3,7 @@ from __future__ import annotations
 from asyncio import open_connection
 from typing import TYPE_CHECKING
 
-from probirka._probes._base import ProbeBase
+from probirka._probe import ProbeBase
 
 if TYPE_CHECKING:
     from datetime import timedelta

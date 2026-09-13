@@ -381,7 +381,7 @@ async def test_cache_ttl_survives_wall_clock_jumps() -> None:
     first = await probe.run_check()
 
     # The wall clock jumps a year ahead; the monotonic deadline must still hold the cache.
-    with patch('probirka._probes._base.datetime') as mock_datetime:
+    with patch('probirka._probe.datetime') as mock_datetime:
         mock_datetime.now.return_value = first.started_at + timedelta(days=365)
         second = await probe.run_check()
 

@@ -11,15 +11,6 @@ ClientOrFactory: TypeAlias = T | Callable[[], T]
 """Either a ready client instance or a zero-argument function (lambda, ``functools.partial``) returning one."""
 
 
-class ProbeFailure(Exception):
-    """
-    Raised by a probe when the dependency answered, but not the way a healthy one should.
-
-    Examples: Redis replied to ``PING`` with something other than ``True``, an HTTP endpoint
-    returned an unexpected status code. The message ends up in :attr:`ProbeResult.error`.
-    """
-
-
 def resolve(client_or_factory: ClientOrFactory[T]) -> T:
     """
     Return the client itself, or call the factory to obtain it.

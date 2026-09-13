@@ -15,16 +15,8 @@ from probirka._lazy import MissingDependencyError
 from probirka._lazy import available as _available
 from probirka._lazy import module_dir as _module_dir
 from probirka._lazy import module_getattr as _module_getattr
-from probirka._probes import (
-    CallableProbe,
-    ClientOrFactory,
-    HttpProbePolicy,
-    HttpProbePolicyViolation,
-    Probe,
-    ProbeBase,
-    ProbeFailure,
-    TcpProbe,
-)
+from probirka._probe import CallableProbe, Probe, ProbeBase, ProbeFailure
+from probirka._probes import ClientOrFactory, HttpProbePolicy, HttpProbePolicyViolation, TcpProbe
 from probirka._probirka import Probirka
 from probirka._redact import MASK, mask_url, redact_value
 from probirka._results import ProbeResult, ProbirkaResult

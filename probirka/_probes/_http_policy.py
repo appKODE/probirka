@@ -18,7 +18,7 @@ from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network, ip_add
 from typing import TypeAlias, cast
 from urllib.parse import SplitResult, urlsplit
 
-from probirka._probes._common import ProbeFailure
+from probirka._probe import ProbeFailure
 from probirka._redact import mask_url
 
 IPAddress: TypeAlias = IPv4Address | IPv6Address
