@@ -31,7 +31,8 @@ Secrets
 Ready-made Probes
 -----------------
 
-All probes below are importable from the ``probirka`` package, e.g. ``from probirka import RedisProbe``.
+All probes below are importable from the ``probirka`` package, e.g. ``from probirka import RedisProbe``,
+and so are ``HttpProbePolicy`` and ``HttpProbePolicyViolation``.
 
 .. automodule:: probirka._probes._common
    :members: ProbeFailure, resolve
@@ -50,6 +51,10 @@ All probes below are importable from the ``probirka`` package, e.g. ``from probi
    :show-inheritance:
 
 .. automodule:: probirka._probes._redis
+   :members:
+   :show-inheritance:
+
+.. automodule:: probirka._probes._http_policy
    :members:
    :show-inheritance:
 

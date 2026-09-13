@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 from probirka._ext.asgi import make_asgi_app
 from probirka._probes import CallableProbe, Probe, ProbeBase
 from probirka._probes._common import ClientOrFactory, ProbeFailure
+from probirka._probes._http_policy import HttpProbePolicy, HttpProbePolicyViolation
 from probirka._probes._tcp import TcpProbe
 from probirka._probirka import Probirka
 from probirka._redact import MASK, mask_url, redact_value
@@ -82,6 +83,8 @@ __all__ = [
     'MASK',
     'CallableProbe',
     'ClientOrFactory',
+    'HttpProbePolicy',
+    'HttpProbePolicyViolation',
     'MissingDependencyError',
     'Probe',
     'ProbeBase',

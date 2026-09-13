@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- `HttpProbePolicy`, a security policy for the HTTP probes, passed as `policy=` to `HttpHttpxProbe`, `HttpHttpx2Probe` and `HttpAiohttpProbe`. Its fields: `allowed_schemes` (`('http', 'https')` by default), `allowed_hosts` (exact names or `*.example.com` wildcards), `block_private_networks` (loopback, private, link-local including `169.254.169.254`, carrier-grade NAT, multicast, unspecified and reserved ranges), `blocked_networks` and `allowed_networks` (CIDR lists, the latter wins), `follow_redirects` and `max_redirects`. The URL is checked at construction (`ValueError`) and before every request; when a network rule is set the host name is resolved first and refused if any address is blocked. Violations are reported as `HttpProbePolicyViolation`, a `ProbeFailure`. The defaults accept any `http`/`https` URL and do not follow redirects. See [Security policy](README.md#security-policy)
+- Redirects are followed by the probe itself when `follow_redirects=True`: every target is checked against the policy before it is requested, `POST` becomes `GET` on `301`/`302`/`303`, request headers are not sent to a different origin, and more than `max_redirects` hops is a failure. The behaviour is the same for httpx, httpx2 and aiohttp
+
+### Changed
+- `HttpAiohttpProbe` no longer follows redirects by default; a `3xx` response is now `'ProbeFailure: unexpected status 302'` unless it is in `expected_status` or the policy has `follow_redirects=True`. All HTTP probes send their requests with the client library's automatic following disabled
+- The URL of an HTTP probe must be absolute with an allowed scheme and is validated in the constructor. A relative URL paired with a client configured with `base_url` is no longer accepted
+- `HttpProbeBase._request_status(client)` is replaced by `_request(client, method, url, headers)` returning `(status, location)`, for subclasses that adapt another client library
+
 ## [0.8.0] - 2026-09-13
 
 ### Added

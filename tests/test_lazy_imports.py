@@ -41,7 +41,7 @@ SCRIPT = textwrap.dedent(
 
     import probirka
     from probirka import *  # noqa: F403  -- must not touch lazy names
-    from probirka import TcpProbe, ProbeFailure, ProbeBase, Probirka
+    from probirka import TcpProbe, ProbeFailure, ProbeBase, Probirka, HttpProbePolicy, HttpProbePolicyViolation
 
     # nothing is installed, so no lazy name is advertised
     assert not set(probirka._LAZY) & set(probirka.__all__)
