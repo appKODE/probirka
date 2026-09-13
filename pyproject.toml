@@ -63,6 +63,11 @@ dev = [
   "ty>=0.0.80",
 ]
 
+[tool.pytest.ini_options]
+markers = [
+    "integration: needs live services, enable with PROBIRKA_INTEGRATION=1",
+]
+
 [tool.ty.environment]
 python-version = "3.11"
 
