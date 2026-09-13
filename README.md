@@ -520,6 +520,16 @@ just ty
 just doc
 ```
 
+Integration tests run the ready-made probes against real services in Docker. They are skipped unless `PROBIRKA_INTEGRATION=1` is set, so `just tests` needs no Docker:
+
+```bash
+just services-up          # docker compose -f tests/integration/compose.yaml up -d --wait
+just tests-integration    # PROBIRKA_INTEGRATION=1 pytest -m integration tests/integration/
+just services-down
+```
+
+Service addresses default to the ports published by the compose file; override them with `PROBIRKA_IT_POSTGRES_DSN`, `PROBIRKA_IT_REDIS_URL`, `PROBIRKA_IT_RABBITMQ_URL`, `PROBIRKA_IT_MONGO_URL`, `PROBIRKA_IT_KAFKA_BOOTSTRAP` and `PROBIRKA_IT_HTTP_URL`. In CI the same containers are started by the `services:` block of the `integration` job.
+
 ## License
 
 MIT
