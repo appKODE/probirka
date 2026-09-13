@@ -99,3 +99,18 @@ async def test_dsn_connect_error(monkeypatch: pytest.MonkeyPatch) -> None:
 
     assert result.ok is False
     assert result.error == 'ConnectionRefusedError: refused'
+
+
+@pytest.mark.asyncio
+async def test_dsn_password_is_masked_in_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    dsn = 'postgresql://app:hunter2@localhost/db'
+
+    async def _connect(given: str) -> None:
+        raise asyncpg.InvalidPasswordError(f'password authentication failed for {given} with "hunter2"')
+
+    monkeypatch.setattr(asyncpg, 'connect', _connect)
+
+    result = await PostgresAsyncpgProbe(dsn=dsn).run_check()
+
+    assert result.ok is False
+    assert result.error == 'InvalidPasswordError: password authentication failed for postgresql://app:***@localhost/db with "***"'

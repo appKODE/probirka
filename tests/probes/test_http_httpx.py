@@ -120,3 +120,24 @@ async def test_expected_status_accepts_single_int() -> None:
     result = await HttpHttpxProbe('http://svc/health', expected_status=204, client=make_client(204, [])).run_check()
 
     assert result.ok is True
+
+
+@pytest.mark.asyncio
+async def test_url_password_and_header_values_are_masked_in_error() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        # httpx moves ``user:pass@`` into a basic auth header; both forms must be masked
+        headers = f'{request.headers["authorization"]} {request.headers["x-token"]}'
+        raise httpx.ConnectError(f'{request.url} rejected {headers}', request=request)
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    probe = HttpHttpxProbe(
+        'http://app:hunter2@svc/health',
+        headers={'X-Token': 'Bearer t0ken-value'},
+        client=client,
+    )
+
+    result = await probe.run_check()
+
+    assert result.ok is False
+    # a header value is masked as a whole, scheme included
+    assert result.error == 'ConnectError: http://app:***@svc/health rejected Basic *** ***'

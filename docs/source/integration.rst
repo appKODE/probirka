@@ -112,13 +112,12 @@ The body is :meth:`probirka.ProbirkaResult.to_dict`, the same for every integrat
 
 ``started_at`` is a timezone-aware ISO 8601 timestamp and ``elapsed`` is the duration in seconds.
 
-.. note::
-
-   One detail differs between the integrations. The FastAPI adapter serializes through
-   ``fastapi.encoders.jsonable_encoder``; every other integration, :func:`probirka.make_asgi_app`
-   included, uses ``json.dumps(..., default=str)``. It only shows on values of ``info`` that are
-   not JSON types: ``jsonable_encoder`` unpacks pydantic models into objects and raises on
-   something it cannot convert, while ``default=str`` writes its ``str()``.
+Every integration renders the body the same way: ``json.dumps`` over
+:meth:`ProbirkaResult.to_dict`, with values of ``info`` that are not JSON types written as their
+``str()``. Secrets are masked on the way out — values under keys like ``password`` or ``api_key``
+become ``'***'``, passwords inside URLs and sensitive query parameters are masked in every string,
+``error`` included — and the adapters do not offer a way to turn that off. When you need the raw
+data, run the probes from your own handler with ``to_dict(redact=False)``.
 
 Generic ASGI app
 ----------------
@@ -316,4 +315,5 @@ framework probirka does not ship an adapter for:
        )
 
 ``default=str`` matters: ``info`` may hold values that are not JSON types, and without it
-``json.dumps`` raises instead of answering.
+``json.dumps`` raises instead of answering. To mask the ``str()`` of such objects the way the
+adapters do, pass ``default=lambda obj: probirka.redact_value(str(obj))`` instead.

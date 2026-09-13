@@ -91,3 +91,18 @@ async def test_url_closes_on_error(monkeypatch: pytest.MonkeyPatch) -> None:
     assert result.ok is False
     assert result.error == 'RuntimeError: boom'
     connection.close.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_url_password_is_masked_in_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    url = 'amqp://app:hunter2@localhost:5672/'
+
+    async def _connect(given: str) -> None:
+        raise ConnectionError(f'cannot connect to {given}')
+
+    monkeypatch.setattr(aio_pika, 'connect', _connect)
+
+    result = await RabbitmqAiopikaProbe(url=url).run_check()
+
+    assert result.ok is False
+    assert result.error == 'ConnectionError: cannot connect to amqp://app:***@localhost:5672/'

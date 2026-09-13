@@ -151,3 +151,18 @@ A probe fails in two ways, both ending up in :attr:`ProbeResult.error`:
   ``'ProbeFailure: PING failed'``.
 
 The probe ``timeout`` covers the whole check, including connecting when a connection string is used.
+
+Secrets never make it into ``error``. Every ready-made probe registers the password of its
+connection string (as written, URL-decoded, and as the ``Basic`` credentials httpx and aiohttp
+derive from ``user:pass@`` in a URL) and the values of its request headers; wherever a client
+library echoes them in an exception message, the result has ``'***'`` instead:
+
+.. code-block:: text
+
+   InvalidPasswordError: password authentication failed for user "app"
+   ConnectError: http://app:***@svc/health rejected Basic ***
+
+The user name, host, port and database are kept. A custom probe registers what it hands to a
+client library with ``self._register_secrets(value, ...)`` in its ``__init__``. On top of that,
+:meth:`ProbeResult.to_dict` masks passwords in URL-like strings and values under sensitive-looking
+keys in ``info``; see :mod:`probirka._redact` for the details and ``to_dict(redact=False)`` to skip it.

@@ -6,6 +6,7 @@ from typing import Any
 
 from probirka._probes._client_base import ClientProbeBase
 from probirka._probes._common import ClientOrFactory, ProbeFailure
+from probirka._redact import secrets_from_headers, secrets_from_url
 
 
 class HttpProbeBase(ClientProbeBase):
@@ -57,6 +58,7 @@ class HttpProbeBase(ClientProbeBase):
         self._expected_status = frozenset([expected_status] if isinstance(expected_status, int) else expected_status)
         self._headers = dict(headers) if headers else None
         self._client = client
+        self._register_secrets(*secrets_from_url(url), *secrets_from_headers(self._headers))
 
     async def _request_status(self, client: Any) -> int:
         """Send the request with ``client`` and return the response status code."""

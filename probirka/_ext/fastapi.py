@@ -4,9 +4,9 @@ from collections.abc import Callable, Coroutine, Sequence
 from typing import Any
 
 from fastapi import status
-from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import Response
 
+from probirka._ext._common import JSON_CONTENT_TYPE, run_and_render
 from probirka._probirka import Probirka
 
 
@@ -42,13 +42,17 @@ def make_fastapi_endpoint(
         Returns:
             Response: The HTTP response with the Probirka results.
         """
-        res = await probirka.run(
+        status_code, body = await run_and_render(
+            probirka=probirka,
             timeout=timeout,
             with_groups=with_groups,
             skip_required=skip_required,
+            return_results=return_results,
+            success_code=success_code,
+            error_code=error_code,
         )
-        resp = JSONResponse(jsonable_encoder(res.to_dict())) if return_results else Response()
-        resp.status_code = success_code if res.ok else error_code
-        return resp
+        if body is None:
+            return Response(status_code=status_code)
+        return Response(content=body, status_code=status_code, media_type=JSON_CONTENT_TYPE)
 
     return endpoint

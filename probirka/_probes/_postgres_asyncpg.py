@@ -9,6 +9,7 @@ import asyncpg
 
 from probirka._probes._client_base import ClientProbeBase
 from probirka._probes._common import ClientOrFactory, require_exactly_one
+from probirka._redact import secrets_from_url
 
 
 class PostgresAsyncpgProbe(ClientProbeBase):
@@ -51,6 +52,7 @@ class PostgresAsyncpgProbe(ClientProbeBase):
         )
         self._client = client
         self._dsn = dsn
+        self._register_secrets(*secrets_from_url(dsn))
 
     @asynccontextmanager
     async def _temporary_client(self) -> AsyncIterator[Any]:

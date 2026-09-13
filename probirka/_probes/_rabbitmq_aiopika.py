@@ -9,6 +9,7 @@ import aio_pika
 
 from probirka._probes._client_base import ClientProbeBase
 from probirka._probes._common import ClientOrFactory, ProbeFailure, require_exactly_one
+from probirka._redact import secrets_from_url
 
 
 class RabbitmqAiopikaProbe(ClientProbeBase):
@@ -51,6 +52,7 @@ class RabbitmqAiopikaProbe(ClientProbeBase):
         )
         self._client = client
         self._url = url
+        self._register_secrets(*secrets_from_url(url))
 
     @asynccontextmanager
     async def _temporary_client(self) -> AsyncIterator[Any]:

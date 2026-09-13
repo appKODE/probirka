@@ -8,6 +8,7 @@ from typing import Any
 
 from probirka._probes._client_base import ClientProbeBase
 from probirka._probes._common import ClientOrFactory, require_exactly_one
+from probirka._redact import secrets_from_url
 
 
 class MongoProbeBase(ClientProbeBase):
@@ -50,6 +51,7 @@ class MongoProbeBase(ClientProbeBase):
         )
         self._client = client
         self._url = url
+        self._register_secrets(*secrets_from_url(url))
 
     @abstractmethod
     def _new_client(self, url: str, **kwargs: Any) -> Any:

@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
 
+from probirka._redact import redact_string, redact_value
+
 
 @dataclass(frozen=True, order=True)
 class ProbeResult:
@@ -19,6 +21,8 @@ class ProbeResult:
     :param elapsed: How long the check took, measured with a monotonic clock.
     :param info: Metadata added via :meth:`ProbeBase.add_info`.
     :param error: ``'ExcType: message'`` when the check failed with an exception or timed out.
+        Values the probe registered as secrets (the password of its connection string, its
+        request headers) are already replaced with ``'***'``.
     :param allow_failure: ``True`` if this probe is allowed to fail without affecting
         :attr:`ProbirkaResult.ok`. Effective value for the run: the probe's own setting,
         overridden by the group it was run in when that group sets ``allow_failure``.
@@ -33,12 +37,17 @@ class ProbeResult:
     error: str | None
     allow_failure: bool = False
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self, *, redact: bool = True) -> dict[str, Any]:
         """
         JSON-compatible representation of the result.
 
         ``started_at`` is an ISO 8601 string carrying the UTC offset, ``elapsed`` is the duration
-        in seconds. ``info`` is returned as is.
+        in seconds.
+
+        :param redact: Mask secrets on the way out (the default): values of ``info`` under keys
+            like ``password`` or ``api_key`` become ``'***'``, and passwords inside URLs and
+            sensitive query parameters are masked in ``info`` strings and in ``error``. Pass
+            ``False`` to get ``info`` and ``error`` exactly as the probe produced them.
         """
         return {
             'name': self.name,
@@ -46,8 +55,8 @@ class ProbeResult:
             'cached': self.cached,
             'started_at': self.started_at.isoformat(),
             'elapsed': self.elapsed.total_seconds(),
-            'info': self.info,
-            'error': self.error,
+            'info': redact_value(self.info) if redact else self.info,
+            'error': redact_string(self.error) if redact and self.error else self.error,
             'allow_failure': self.allow_failure,
         }
 
@@ -74,18 +83,21 @@ class ProbirkaResult:
     checks: Sequence[ProbeResult]
     error: str | None = None
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self, *, redact: bool = True) -> dict[str, Any]:
         """
         JSON-compatible representation of the result, shared by all framework integrations.
 
         ``started_at`` is an ISO 8601 string carrying the UTC offset, ``elapsed`` is the duration
-        in seconds, ``checks`` is a list of :meth:`ProbeResult.to_dict`. ``info`` is returned as is.
+        in seconds, ``checks`` is a list of :meth:`ProbeResult.to_dict`.
+
+        :param redact: Mask secrets in ``info`` and in every check, see :meth:`ProbeResult.to_dict`.
+            ``True`` by default; the framework integrations always leave it on.
         """
         return {
             'ok': self.ok,
             'started_at': self.started_at.isoformat(),
             'elapsed': self.elapsed.total_seconds(),
-            'info': self.info,
-            'checks': [check.to_dict() for check in self.checks],
-            'error': self.error,
+            'info': redact_value(self.info) if redact else self.info,
+            'checks': [check.to_dict(redact=redact) for check in self.checks],
+            'error': redact_string(self.error) if redact and self.error else self.error,
         }

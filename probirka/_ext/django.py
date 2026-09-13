@@ -3,8 +3,9 @@ from __future__ import annotations
 from collections.abc import Callable, Coroutine, Sequence
 from typing import Any
 
-from django.http import HttpRequest, HttpResponse, HttpResponseNotAllowed, JsonResponse
+from django.http import HttpRequest, HttpResponse, HttpResponseNotAllowed
 
+from probirka._ext._common import JSON_CONTENT_TYPE, run_and_render
 from probirka._probirka import Probirka
 
 _ALLOWED_METHODS = ('GET', 'HEAD')
@@ -50,14 +51,17 @@ def make_django_view(
         """
         if request.method not in _ALLOWED_METHODS:
             return HttpResponseNotAllowed(_ALLOWED_METHODS)
-        res = await probirka.run(
+        status_code, body = await run_and_render(
+            probirka=probirka,
             timeout=timeout,
             with_groups=with_groups,
             skip_required=skip_required,
+            return_results=return_results,
+            success_code=success_code,
+            error_code=error_code,
         )
-        status_code = success_code if res.ok else error_code
-        if return_results:
-            return JsonResponse(res.to_dict(), status=status_code, json_dumps_params={'default': str})
-        return HttpResponse(status=status_code)
+        if body is None:
+            return HttpResponse(status=status_code)
+        return HttpResponse(body, status=status_code, content_type=JSON_CONTENT_TYPE)
 
     return view
