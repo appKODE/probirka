@@ -1,15 +1,17 @@
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from datetime import timedelta
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 from aiokafka.admin import AIOKafkaAdminClient
 
 from probirka._probes._client_base import ClientProbeBase
 from probirka._probes._common import ClientOrFactory, require_exactly_one
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+    from datetime import timedelta
 
 
 class KafkaAiokafkaProbe(ClientProbeBase):
@@ -57,7 +59,7 @@ class KafkaAiokafkaProbe(ClientProbeBase):
 
     @asynccontextmanager
     async def _temporary_client(self) -> AsyncIterator[Any]:
-        assert self._bootstrap_servers is not None
+        assert self._bootstrap_servers is not None  # noqa: S101 -- narrowed by require_exactly_one in __init__
         admin = AIOKafkaAdminClient(bootstrap_servers=self._bootstrap_servers)
         try:
             await admin.start()
@@ -74,6 +76,5 @@ class KafkaAiokafkaProbe(ClientProbeBase):
         elif isinstance(client, AIOKafkaConsumer):
             await client.topics()
         else:
-            raise TypeError(
-                f'expected AIOKafkaProducer, AIOKafkaConsumer or AIOKafkaAdminClient, got {type(client).__name__}'
-            )
+            msg = f'expected AIOKafkaProducer, AIOKafkaConsumer or AIOKafkaAdminClient, got {type(client).__name__}'
+            raise TypeError(msg)

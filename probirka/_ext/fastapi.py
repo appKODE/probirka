@@ -1,13 +1,16 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Coroutine, Sequence
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from fastapi import status
 from fastapi.responses import Response
 
 from probirka._ext._common import JSON_CONTENT_TYPE, run_and_render
-from probirka._probirka import Probirka
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Coroutine, Sequence
+
+    from probirka._probirka import Probirka
 
 
 def make_fastapi_endpoint(
@@ -37,7 +40,7 @@ def make_fastapi_endpoint(
 
     async def endpoint() -> Response:
         """
-        The FastAPI endpoint that runs the Probirka instance.
+        Run the Probirka instance and return the FastAPI response.
 
         Returns:
             Response: The HTTP response with the Probirka results.

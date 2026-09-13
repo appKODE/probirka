@@ -1,15 +1,17 @@
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from datetime import timedelta
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import asyncpg
 
 from probirka._probes._client_base import ClientProbeBase
 from probirka._probes._common import ClientOrFactory, require_exactly_one
 from probirka._redact import secrets_from_url
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+    from datetime import timedelta
 
 
 class PostgresAsyncpgProbe(ClientProbeBase):

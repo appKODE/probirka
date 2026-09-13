@@ -1,14 +1,16 @@
 from __future__ import annotations
 
-from contextlib import AbstractAsyncContextManager
-from datetime import timedelta
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from redis.asyncio import Redis
 
 from probirka._probes._client_base import ClientProbeBase
 from probirka._probes._common import ClientOrFactory, ProbeFailure, require_exactly_one
 from probirka._redact import secrets_from_url
+
+if TYPE_CHECKING:
+    from contextlib import AbstractAsyncContextManager
+    from datetime import timedelta
 
 
 class RedisProbe(ClientProbeBase):
@@ -54,10 +56,11 @@ class RedisProbe(ClientProbeBase):
         self._register_secrets(*secrets_from_url(url))
 
     def _temporary_client(self) -> AbstractAsyncContextManager[Any]:
-        assert self._url is not None
+        assert self._url is not None  # noqa: S101 -- narrowed by require_exactly_one in __init__
         # ``Redis`` is an async context manager since redis-py 4.2; ``__aexit__`` closes the client
         return Redis.from_url(self._url)
 
     async def _check_client(self, client: Any) -> None:
         if not await client.ping():
-            raise ProbeFailure('PING failed')
+            msg = 'PING failed'
+            raise ProbeFailure(msg)

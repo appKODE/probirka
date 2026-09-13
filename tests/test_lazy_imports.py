@@ -25,16 +25,16 @@ BLOCKED = (
 
 # Runs in a subprocess so that already-imported client libraries do not leak in.
 SCRIPT = textwrap.dedent(
-    """
+    f"""
     import sys
     from importlib.abc import MetaPathFinder
 
-    BLOCKED = %r
+    BLOCKED = {BLOCKED!r}
 
     class Blocker(MetaPathFinder):
         def find_spec(self, fullname, path=None, target=None):
             if fullname.split('.')[0] in BLOCKED:
-                raise ModuleNotFoundError(f'{fullname} is blocked', name=fullname)
+                raise ModuleNotFoundError(f'{{fullname}} is blocked', name=fullname)
             return None
 
     sys.meta_path.insert(0, Blocker())
@@ -44,17 +44,17 @@ SCRIPT = textwrap.dedent(
     from probirka import TcpProbe, ProbeFailure, ProbeBase, Probirka, HttpProbePolicy, HttpProbePolicyViolation
 
     # nothing is installed, so no lazy name is advertised
-    assert not set(probirka._LAZY) & set(probirka.__all__)
-    assert not set(probirka._LAZY) & set(dir(probirka))
+    assert not set(probirka._lazy.LAZY) & set(probirka.__all__)
+    assert not set(probirka._lazy.LAZY) & set(dir(probirka))
 
-    for name in probirka._LAZY:
+    for name in probirka._lazy.LAZY:
         try:
             getattr(probirka, name)
         except probirka.MissingDependencyError as exc:
             assert 'pip install' in str(exc), exc
             assert isinstance(exc.__cause__, ModuleNotFoundError)
         else:
-            raise AssertionError(f'{name} should not be importable')
+            raise AssertionError(f'{{name}} should not be importable')
 
     try:
         probirka.NoSuchProbe
@@ -65,7 +65,6 @@ SCRIPT = textwrap.dedent(
 
     print('OK')
     """
-    % (BLOCKED,)
 )
 
 
@@ -82,9 +81,9 @@ def test_broken_install_keeps_the_original_error(tmp_path: Path) -> None:
     (tmp_path / 'redis' / '__init__.py').write_text('')
     (stub / '__init__.py').write_text("raise ImportError('cannot import name Redis')")  # like redis < 4.2
     script = textwrap.dedent(
-        """
+        f"""
         import sys
-        sys.path.insert(0, %r)
+        sys.path.insert(0, {str(tmp_path)!r})
         import probirka
         try:
             probirka.RedisProbe
@@ -96,7 +95,6 @@ def test_broken_install_keeps_the_original_error(tmp_path: Path) -> None:
             raise AssertionError('should not be importable')
         print('OK')
         """
-        % (str(tmp_path),)
     )
 
     proc = subprocess.run([sys.executable, '-c', script], capture_output=True, text=True, check=False)
@@ -106,7 +104,7 @@ def test_broken_install_keeps_the_original_error(tmp_path: Path) -> None:
 
 
 def test_all_lists_lazy_names_whose_package_is_installed() -> None:
-    for name, (_, import_name, _) in probirka._LAZY.items():
+    for name, (_, import_name, _) in probirka._lazy.LAZY.items():
         installed = importlib.util.find_spec(import_name) is not None
         assert (name in probirka.__all__) is installed, name
         assert (name in dir(probirka)) is installed, name
@@ -114,7 +112,7 @@ def test_all_lists_lazy_names_whose_package_is_installed() -> None:
 
 def test_star_import_brings_available_adapters_and_probes() -> None:
     namespace: dict = {}  # type: ignore[type-arg]
-    exec('from probirka import *', namespace)  # noqa: S102
+    exec('from probirka import *', namespace)
     for name in probirka.__all__:
         assert name in namespace, name
 
@@ -124,7 +122,7 @@ def test_unknown_attribute_raises_attribute_error() -> None:
         probirka.no_such_thing  # noqa: B018
 
 
-@pytest.mark.parametrize(('name', 'spec'), sorted(probirka._LAZY.items()))
+@pytest.mark.parametrize(('name', 'spec'), sorted(probirka._lazy.LAZY.items()))
 def test_lazy_name_resolves_to_the_real_object(name: str, spec: 'tuple[str, str, str]') -> None:
     module_path, import_name, package = spec
     pytest.importorskip(import_name)

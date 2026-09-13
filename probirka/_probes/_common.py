@@ -35,7 +35,7 @@ def resolve(client_or_factory: ClientOrFactory[T]) -> T:
     """
     if isroutine(client_or_factory) or isinstance(client_or_factory, partial):
         return client_or_factory()
-    return cast(T, client_or_factory)
+    return cast('T', client_or_factory)
 
 
 def require_exactly_one(**kwargs: Any) -> None:
@@ -48,6 +48,8 @@ def require_exactly_one(**kwargs: Any) -> None:
     provided = [name for name, value in kwargs.items() if value is not None]
     names = ', '.join(kwargs)
     if not provided:
-        raise ValueError(f'one of {names} is required')
+        msg = f'one of {names} is required'
+        raise ValueError(msg)
     if len(provided) > 1:
-        raise ValueError(f'{names} are mutually exclusive, got {", ".join(provided)}')
+        msg = f'{names} are mutually exclusive, got {", ".join(provided)}'
+        raise ValueError(msg)

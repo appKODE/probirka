@@ -1,14 +1,16 @@
 from __future__ import annotations
 
-from collections.abc import Collection, Mapping
-from datetime import timedelta
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import SplitResult, urljoin
 
 from probirka._probes._client_base import ClientProbeBase
 from probirka._probes._common import ClientOrFactory, ProbeFailure
 from probirka._probes._http_policy import HttpProbePolicy, HttpProbePolicyViolation, normalize_host
 from probirka._redact import mask_url, secrets_from_headers, secrets_from_url
+
+if TYPE_CHECKING:
+    from collections.abc import Collection, Mapping
+    from datetime import timedelta
 
 _DEFAULT_POLICY = HttpProbePolicy()
 _SEE_OTHER = 303
@@ -24,7 +26,7 @@ def _origin(parts: SplitResult) -> tuple[str, str | None, int | None]:
 
 
 def _redirect_method(status: int, method: str) -> str:
-    """The method for the next hop, following the same rules as httpx and aiohttp."""
+    """Return the method for the next hop, following the same rules as httpx and aiohttp."""
     upper = method.upper()
     if status == _SEE_OTHER and upper != 'HEAD':
         return 'GET'
@@ -89,7 +91,8 @@ class HttpProbeBase(ClientProbeBase):
         try:
             self._policy.check_url(url)
         except HttpProbePolicyViolation as exc:
-            raise ValueError(f'url refused by policy: {exc}') from exc
+            msg = f'url refused by policy: {exc}'
+            raise ValueError(msg) from exc
         self._url = url
         self._method = method
         self._expected_status = frozenset([expected_status] if isinstance(expected_status, int) else expected_status)
@@ -115,7 +118,8 @@ class HttpProbeBase(ClientProbeBase):
         try:
             return await self._policy.check(url)
         except HttpProbePolicyViolation as exc:
-            raise HttpProbePolicyViolation(f'redirect to {mask_url(url)} refused: {exc}') from None
+            msg = f'redirect to {mask_url(url)} refused: {exc}'
+            raise HttpProbePolicyViolation(msg) from None
 
     async def _check_client(self, client: Any) -> None:
         policy = self._policy
@@ -128,10 +132,12 @@ class HttpProbeBase(ClientProbeBase):
                 break
             hops += 1
             if hops > policy.max_redirects:
-                raise HttpProbePolicyViolation(f'too many redirects (more than {policy.max_redirects})')
+                msg = f'too many redirects (more than {policy.max_redirects})'
+                raise HttpProbePolicyViolation(msg)
             url = urljoin(url, location)
             if _origin(await self._check_redirect(url)) != origin:
                 headers = None  # credentials meant for the original host must not leak elsewhere
             method = _redirect_method(status, method)
         if status not in self._expected_status:
-            raise ProbeFailure(f'unexpected status {status}')
+            msg = f'unexpected status {status}'
+            raise ProbeFailure(msg)

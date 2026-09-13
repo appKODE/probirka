@@ -48,4 +48,3 @@ def test_require_exactly_one_rejects_nothing() -> None:
 def test_require_exactly_one_rejects_both() -> None:
     with pytest.raises(ValueError, match='mutually exclusive'):
         require_exactly_one(client=object(), dsn='postgresql://')
-

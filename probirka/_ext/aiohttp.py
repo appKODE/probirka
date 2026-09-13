@@ -1,12 +1,15 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Coroutine, Sequence
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from aiohttp import web
 
 from probirka._ext._common import JSON_CONTENT_TYPE, run_and_render
-from probirka._probirka import Probirka
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Coroutine, Sequence
+
+    from probirka._probirka import Probirka
 
 
 def make_aiohttp_endpoint(
@@ -38,7 +41,7 @@ def make_aiohttp_endpoint(
         _: web.Request,
     ) -> web.Response:
         """
-        The aiohttp endpoint that runs the Probirka instance.
+        Run the Probirka instance and return the aiohttp response.
 
         Args:
             _: The aiohttp request object.

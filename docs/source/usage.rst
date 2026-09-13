@@ -153,7 +153,7 @@ You can create custom checks by inheriting from the `ProbeBase` class:
    class CustomProbe(ProbeBase):
        def __init__(self, name="CustomProbe"):
            super().__init__(name=name)
-           
+
        async def _check(self):
            # Implement your check logic here
            return True
@@ -320,7 +320,7 @@ Caching Results
    class DatabaseProbe(ProbeBase):
        def __init__(self, success_ttl: Optional[int] = None, failed_ttl: Optional[int] = None):
            super().__init__(success_ttl=success_ttl, failed_ttl=failed_ttl)
-           
+
        async def _check(self) -> bool:
            # Simulate database check
            await asyncio.sleep(1)

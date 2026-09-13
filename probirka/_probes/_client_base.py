@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from contextlib import AbstractAsyncContextManager
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from probirka._probes import ProbeBase
+from probirka._probes._base import ProbeBase
 from probirka._probes._common import ClientOrFactory, resolve
+
+if TYPE_CHECKING:
+    from contextlib import AbstractAsyncContextManager
 
 
 class ClientProbeBase(ProbeBase):

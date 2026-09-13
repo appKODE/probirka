@@ -43,7 +43,6 @@ dev = [
   "aiokafka>=0.8",
   "asyncpg>=0.29",
   "django>=4.2",
-  "bandit>=1.7.10",
   "fastapi>=0.115.6",
   "httpx>=0.28.1",
   "httpx2>=2.0",
@@ -55,7 +54,7 @@ dev = [
   "pytest-asyncio>=0.24.0",
   "pytest-cov>=5.0.0",
   "pytest-timeout>=2.3.1",
-  "ruff>=0.8.1",
+  "ruff>=0.16.7",
   "sphinx>=7.1.2",
   "sphinx-autodoc-typehints>=2.0.1",
   "sphinx-rtd-theme>=3.0.2",
@@ -86,68 +85,94 @@ exclude = [
 lint.ignore = [
   "PLR0913", # Too many arguments to function call
   "PLR0917", # Too many positional arguments
+  "N818", # ProbeFailure and HttpProbePolicyViolation are public names
+  "ANN401", # Any is the honest type of `info` values and of the PEP 562 hook
+  "ASYNC109", # `timeout=` on Probirka.run / run_and_render is the public API
+  "TRY003", # messages are written inline; EM already moves them into a variable
 ]
 lint.flake8-tidy-imports.ban-relative-imports = "all"
+lint.flake8-type-checking.quote-annotations = true
+lint.flake8-type-checking.runtime-evaluated-decorators = ["dataclasses.dataclass"]
+lint.isort.known-first-party = ["probirka"]
 lint.mccabe.max-complexity = 20
+lint.pydocstyle.convention = "pep257"
 lint.select = [
   "F", # Pyflakes
-  # "E/W", # pycodestyle
+  "E", # pycodestyle errors
+  "W", # pycodestyle warnings
   "C90", # mccabe
-  # "I", # isort
-  # "N", # pep8-naming
-  # "D", # pydocstyle
+  "I", # isort
+  "N", # pep8-naming
+  "D", # pydocstyle
   "UP", # pyupgrade
   "YTT", # flake8-2020
-  # "ANN", # flake8-annotations
-  # "ASYNC", # flake8-async
-  # "TRIO", # flake8-trio
-  # "S", # flake8-bandit
-  # "BLE", # flake8-blind-except
-  # "FBT", # flake8-boolean-trap
+  "ANN", # flake8-annotations
+  "ASYNC", # flake8-async
+  "S", # flake8-bandit
+  "BLE", # flake8-blind-except
+  # "FBT", # flake8-boolean-trap: boolean positionals are the published signatures
   "B", # flake8-bugbear
-  # "A", # flake8-builtins
-  # "COM", # flake8-commas
-  # "CPY", # flake8-copyright
+  "A", # flake8-builtins
+  # "COM", # flake8-commas: the formatter owns trailing commas
+  # "CPY", # flake8-copyright: no header policy
   "C4", # flake8-comprehensions
   "DTZ", # flake8-datetimez
   "T10", # flake8-debugger
-  # "DJ", # flake8-django
-  # "EM", # flake8-errmsg
-  # "EXE", # flake8-executable
-  # "FA", # flake8-future-annotations
-  #  "ISC", # flake8-implicit-str-concat
-  # "ICN", # flake8-import-conventions
+  # "DJ", # flake8-django: no Django models or forms here
+  "EM", # flake8-errmsg
+  # "EXE", # flake8-executable: no scripts
+  # "FA", # flake8-future-annotations: nothing to check at py311
+  # "ISC", # flake8-implicit-str-concat: the formatter owns concatenation
+  # "ICN", # flake8-import-conventions: no numpy/pandas here
+  "LOG", # flake8-logging
   "G", # flake8-logging-format
   "INP", # flake8-no-pep420
-  # "PIE", # flake8-pie
+  "PIE", # flake8-pie
   "T20", # flake8-print
-  # "PYI", # flake8-pyi
-  # "PT", # flake8-pytest-style
-  # "Q", # flake8-quotes
+  # "PYI", # flake8-pyi: no stub files
+  "PT", # flake8-pytest-style
+  # "Q", # flake8-quotes: the formatter owns quotes
   "RSE", # flake8-raise
   "RET", # flake8-return
   "SLF", # flake8-self
-  # "SLOT", # flake8-slots
+  "SLOT", # flake8-slots
   "SIM", # flake8-simplify
   "TID", # flake8-tidy-imports
-  # "TCH", # flake8-type-checking
-  # "INT", # flake8-gettext
-  # "ARG", # flake8-unused-arguments
+  "TC", # flake8-type-checking
+  # "INT", # flake8-gettext: no gettext
+  "ARG", # flake8-unused-arguments
   "PTH", # flake8-use-pathlib
-  # "TD", # flake8-todos
-  # "FIX", # flake8-fixme
+  # "TD", # flake8-todos: no TODO format policy
+  # "FIX", # flake8-fixme: no TODO format policy
   "ERA", # eradicate
   # "PD", # pandas-vet
-  # "PGH", # pygrep-hooks
+  "PGH", # pygrep-hooks
   "PL", # Pylint
-  # "TRY", # tryceratops
-  # "FLY", # flynt
+  "TRY", # tryceratops
+  "FLY", # flynt
   # "NPY", # NumPy-specific rules
   # "AIR", # Airflow
-  # "PERF", # Perflint
-  # "FURB", # refurb
-  # "LOG", # flake8-logging
+  "PERF", # Perflint
+  "FURB", # refurb
   "RUF", # Ruff-specific rules
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = [
+  "ARG", # fixtures and mocks take parameters they do not use
+  "D", # tests are documented by their names
+  "E402", # pytest.importorskip() before the imports it guards
+  "EM", # assertion messages are written inline
+  "PLC0415", # imports inside tests isolate optional dependencies
+  "PLR2004", # literal status codes and counts are the point of an assertion
+  "S", # asserts, subprocess and dummy passwords are what tests are made of
+  "SLF001", # tests inspect private state
+  "TC", # moving typing imports out of the runtime buys nothing in tests
+]
+"docs/**" = [
+  "A001", # Sphinx requires a variable named `copyright`
+  "D", # Sphinx configuration
+  "INP001", # conf.py is not a package
 ]
 
 [tool.ruff.format]

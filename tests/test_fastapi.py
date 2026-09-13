@@ -5,10 +5,8 @@ pytest.importorskip('fastapi')
 from fastapi import FastAPI, status
 from fastapi.testclient import TestClient
 
-from probirka import Probirka
-from probirka import make_fastapi_endpoint
+from probirka import Probirka, make_fastapi_endpoint
 from tests.helpers import FailureProbe, LeakyConfig, SlowProbe, SuccessProbe
-
 
 
 @pytest.fixture
@@ -20,128 +18,118 @@ def probirka() -> Probirka:
 def test_client(probirka: Probirka) -> TestClient:
     app = FastAPI()
     endpoint = make_fastapi_endpoint(probirka)
-    app.add_api_route("/health", endpoint)
+    app.add_api_route('/health', endpoint)
     return TestClient(app)
 
 
 def test_successful_response(test_client: TestClient, probirka: Probirka) -> None:
-    # Подготовка
-    probirka.add_info("some_field", "value")
+    # Arrange
+    probirka.add_info('some_field', 'value')
     probirka.add_probes(SuccessProbe())
 
-    # Выполнение
-    response = test_client.get("/health")
+    # Act
+    response = test_client.get('/health')
 
-    # Проверка
+    # Assert
     assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
-    assert response_data["ok"] is True
-    assert response_data["info"]["some_field"] == "value"
-    assert len(response_data["checks"]) == 1
-    assert response_data["checks"][0]["ok"] is True
+    assert response_data['ok'] is True
+    assert response_data['info']['some_field'] == 'value'
+    assert len(response_data['checks']) == 1
+    assert response_data['checks'][0]['ok'] is True
 
 
 def test_error_response(test_client: TestClient, probirka: Probirka) -> None:
-    # Подготовка
+    # Arrange
     probirka.add_probes(FailureProbe())
 
-    # Выполнение
-    response = test_client.get("/health")
+    # Act
+    response = test_client.get('/health')
 
-    # Проверка
+    # Assert
     assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
     response_data = response.json()
-    assert response_data["ok"] is False
-    assert len(response_data["checks"]) == 1
-    assert response_data["checks"][0]["ok"] is False
+    assert response_data['ok'] is False
+    assert len(response_data['checks']) == 1
+    assert response_data['checks'][0]['ok'] is False
 
 
 def test_custom_status_codes(probirka: Probirka) -> None:
-    # Подготовка
+    # Arrange
     app = FastAPI()
     endpoint = make_fastapi_endpoint(
-        probirka,
-        success_code=status.HTTP_201_CREATED,
-        error_code=status.HTTP_400_BAD_REQUEST
+        probirka, success_code=status.HTTP_201_CREATED, error_code=status.HTTP_400_BAD_REQUEST
     )
-    app.add_api_route("/health", endpoint)
+    app.add_api_route('/health', endpoint)
     client = TestClient(app)
 
     probirka.add_probes(SuccessProbe())
 
-    # Выполнение
-    response = client.get("/health")
+    # Act
+    response = client.get('/health')
 
-    # Проверка
+    # Assert
     assert response.status_code == status.HTTP_201_CREATED
     response_data = response.json()
-    assert response_data["ok"] is True
+    assert response_data['ok'] is True
 
 
 def test_without_results(probirka: Probirka) -> None:
-    # Подготовка
+    # Arrange
     app = FastAPI()
-    endpoint = make_fastapi_endpoint(
-        probirka,
-        return_results=False
-    )
-    app.add_api_route("/health", endpoint)
+    endpoint = make_fastapi_endpoint(probirka, return_results=False)
+    app.add_api_route('/health', endpoint)
     client = TestClient(app)
 
     probirka.add_probes(SuccessProbe())
 
-    # Выполнение
-    response = client.get("/health")
+    # Act
+    response = client.get('/health')
 
-    # Проверка
+    # Assert
     assert response.status_code == status.HTTP_200_OK
-    assert response.content == b""
+    assert response.content == b''
 
 
 def test_with_custom_parameters(probirka: Probirka) -> None:
-    # Подготовка
+    # Arrange
     success_probe_1 = SuccessProbe()
     success_probe_2 = SuccessProbe()
 
     probirka.add_probes(success_probe_1)  # required probe
-    probirka.add_probes(success_probe_2, groups=["group1"])  # optional probe
+    probirka.add_probes(success_probe_2, groups=['group1'])  # optional probe
 
     app = FastAPI()
-    endpoint = make_fastapi_endpoint(
-        probirka,
-        timeout=30,
-        with_groups=["group1"],
-        skip_required=True
-    )
-    app.add_api_route("/health", endpoint)
+    endpoint = make_fastapi_endpoint(probirka, timeout=30, with_groups=['group1'], skip_required=True)
+    app.add_api_route('/health', endpoint)
     client = TestClient(app)
 
-    # Выполнение
-    response = client.get("/health")
+    # Act
+    response = client.get('/health')
 
-    # Проверка
+    # Assert
     assert response.status_code == status.HTTP_200_OK
     response_data = response.json()
-    assert response_data["ok"] is True
-    # Проверяем, что запустился только один проб из группы group1
-    assert len(response_data["checks"]) == 1
+    assert response_data['ok'] is True
+    # only the one probe of group1 ran
+    assert len(response_data['checks']) == 1
 
 
 def test_timeout_returns_error_code(probirka: Probirka) -> None:
     app = FastAPI()
     endpoint = make_fastapi_endpoint(probirka, timeout=0.1)  # type: ignore[arg-type]
-    app.add_api_route("/health", endpoint)
+    app.add_api_route('/health', endpoint)
     client = TestClient(app)
     probirka.add_probes(SlowProbe())
 
-    response = client.get("/health")
+    response = client.get('/health')
 
     assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
     response_data = response.json()
-    assert response_data["ok"] is False
-    assert response_data["error"] == "TimeoutError: probirka run timed out after 0.1s"
-    assert response_data["checks"][0]["ok"] is False
-    assert response_data["checks"][0]["error"] == "TimeoutError: probirka run timed out after 0.1s"
+    assert response_data['ok'] is False
+    assert response_data['error'] == 'TimeoutError: probirka run timed out after 0.1s'
+    assert response_data['checks'][0]['ok'] is False
+    assert response_data['checks'][0]['error'] == 'TimeoutError: probirka run timed out after 0.1s'
 
 
 def test_secrets_are_masked_in_response(test_client: TestClient, probirka: Probirka) -> None:

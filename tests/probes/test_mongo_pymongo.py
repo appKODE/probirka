@@ -18,9 +18,9 @@ def make_client(side_effect: object = None) -> MagicMock:
 
 
 def test_requires_client_or_url() -> None:
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='is required'):
         MongoPymongoProbe()
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='mutually exclusive'):
         MongoPymongoProbe(client=MagicMock(), url='mongodb://x')
 
 
@@ -91,4 +91,7 @@ async def test_url_password_is_masked_in_error(monkeypatch: pytest.MonkeyPatch) 
     result = await MongoPymongoProbe(url=url).run_check()
 
     assert result.ok is False
-    assert result.error == 'ServerSelectionTimeoutError: mongodb://app:***@localhost:27017/db: [Errno 61] Connection refused'
+    assert (
+        result.error
+        == 'ServerSelectionTimeoutError: mongodb://app:***@localhost:27017/db: [Errno 61] Connection refused'
+    )

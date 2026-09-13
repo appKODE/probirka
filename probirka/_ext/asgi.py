@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable, MutableMapping, Sequence
-from typing import Any, TypeAlias
+from typing import TYPE_CHECKING, Any, TypeAlias
 
 from probirka._ext._common import JSON_CONTENT_TYPE, run_and_render
-from probirka._probirka import Probirka
+
+if TYPE_CHECKING:
+    from probirka._probirka import Probirka
 
 Scope: TypeAlias = MutableMapping[str, Any]
 """ASGI connection scope."""
@@ -136,7 +138,8 @@ class _ProbirkaAsgiApp:
             await _handle_lifespan(receive, send)
             return
         if scope_type != 'http':
-            raise RuntimeError(f'probirka serves the http and lifespan scopes only, got {scope_type!r}')
+            msg = f'probirka serves the http and lifespan scopes only, got {scope_type!r}'
+            raise RuntimeError(msg)
         method = scope['method']
         if method not in _ALLOWED_METHODS:
             await _send_response(send, 405, None, extra_headers=((b'allow', _ALLOW_HEADER),))

@@ -18,9 +18,9 @@ def make_client(side_effect: object = None) -> MagicMock:
 
 
 def test_requires_client_or_url() -> None:
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='is required'):
         MongoMotorProbe()
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='mutually exclusive'):
         MongoMotorProbe(client=MagicMock(), url='mongodb://x')
 
 

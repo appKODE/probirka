@@ -4,7 +4,7 @@ API Reference
 Core Classes
 ------------
 
-.. automodule:: probirka._probes
+.. automodule:: probirka._probes._base
    :members:
    :undoc-members:
    :show-inheritance:
@@ -17,6 +17,10 @@ Core Classes
 .. automodule:: probirka._results
    :members:
    :undoc-members:
+   :show-inheritance:
+
+.. automodule:: probirka._lazy
+   :members: MissingDependencyError
    :show-inheritance:
 
 Secrets

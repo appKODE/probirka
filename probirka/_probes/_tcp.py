@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from asyncio import open_connection
-from datetime import timedelta
+from typing import TYPE_CHECKING
 
-from probirka._probes import ProbeBase
+from probirka._probes._base import ProbeBase
+
+if TYPE_CHECKING:
+    from datetime import timedelta
 
 
 class TcpProbe(ProbeBase):

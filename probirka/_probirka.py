@@ -3,21 +3,21 @@ from __future__ import annotations
 from asyncio import ensure_future, gather, wait
 from collections import defaultdict
 from dataclasses import replace
-from collections.abc import Callable, Sequence
 from datetime import UTC, datetime, timedelta
 from time import monotonic
-from typing import Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
-from probirka._probes import CallableProbe, Probe, ProbeCallable
-from probirka._results import ProbirkaResult, ProbeResult
+from probirka._probes._base import CallableProbe, Probe, ProbeCallable
+from probirka._results import ProbeResult, ProbirkaResult
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Sequence
 
 ProbeFuncT = TypeVar('ProbeFuncT', bound=ProbeCallable)
 
 
 class Probirka:
-    """
-    Probirka is a health check manager that allows adding and running probes.
-    """
+    """Probirka is a health check manager that allows adding and running probes."""
 
     def __init__(
         self,
@@ -90,7 +90,8 @@ class Probirka:
                     self._group_allow_failure[group] = allow_failure
             return
         if allow_failure is not None:
-            raise ValueError('allow_failure applies to groups; set it on the probe itself')
+            msg = 'allow_failure applies to groups; set it on the probe itself'
+            raise ValueError(msg)
         self._required_probes.extend(probes)
 
     def add(
@@ -103,7 +104,7 @@ class Probirka:
         allow_failure: bool = False,
     ) -> Callable[[ProbeFuncT], ProbeFuncT]:
         """
-        Decorator to add a callable as a probe.
+        Register the decorated callable as a probe.
 
         :param name: Probe name
         :param timeout: Probe timeout in seconds
@@ -139,10 +140,10 @@ class Probirka:
         skip_required: bool,
     ) -> tuple[list[Probe], dict[int, list[bool | None]]]:
         """
-        Build the list of probes to run and, per probe, the ``allow_failure`` value of every
-        source (required list or group) it is run through.
+        Build the list of probes to run and, per probe, the ``allow_failure`` value of its sources.
 
-        A source contributes ``None`` when it does not override the probe's own setting.
+        A source is the required list or a group the probe is run through; it contributes ``None``
+        when it does not override the probe's own setting.
         The same probe object may appear more than once in the list; its sources are
         merged by identity so the effective flag is the same for every occurrence.
 

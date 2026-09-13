@@ -1,3 +1,4 @@
+from typing import ClassVar
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -16,9 +17,9 @@ from probirka import KafkaAiokafkaProbe
 class FakeAdmin(AIOKafkaAdminClient):
     """Real subclass so that the probe's isinstance dispatch recognises it; records its instances."""
 
-    instances: list = []  # type: ignore[type-arg]
+    instances: ClassVar[list['FakeAdmin']] = []
 
-    def __init__(self, **kwargs: object) -> None:  # noqa: PLW0231 -- the real ctor needs a running loop
+    def __init__(self, **kwargs: object) -> None:
         self.kwargs = kwargs
         self.start = AsyncMock()
         self.describe_cluster = AsyncMock(return_value={})
@@ -34,9 +35,9 @@ def fake_admin(monkeypatch: pytest.MonkeyPatch) -> type:
 
 
 def test_requires_client_or_bootstrap_servers() -> None:
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='is required'):
         KafkaAiokafkaProbe()
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='mutually exclusive'):
         KafkaAiokafkaProbe(client=MagicMock(), bootstrap_servers='localhost:9092')
 
 
@@ -126,7 +127,9 @@ async def test_bootstrap_servers_closes_admin_on_error(fake_admin: type, monkeyp
 
 
 @pytest.mark.asyncio
-async def test_bootstrap_servers_closes_admin_when_start_fails(fake_admin: type, monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_bootstrap_servers_closes_admin_when_start_fails(
+    fake_admin: type, monkeypatch: pytest.MonkeyPatch
+) -> None:
     class Unreachable(FakeAdmin):
         def __init__(self, **kwargs: object) -> None:
             super().__init__(**kwargs)

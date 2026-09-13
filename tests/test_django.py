@@ -1,5 +1,5 @@
+from collections.abc import Callable
 from datetime import datetime
-from typing import Callable, List
 
 import pytest
 
@@ -31,10 +31,9 @@ from django.urls import clear_url_caches, path
 from probirka import make_django_view
 
 # Django resolves ROOT_URLCONF to this module and reads this symbol by name
-urlpatterns: List[object] = []
+urlpatterns: list[object] = []
 
 View = Callable[[HttpRequest], object]
-
 
 
 @pytest.fixture

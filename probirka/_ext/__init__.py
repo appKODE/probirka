@@ -8,3 +8,7 @@ framework-specific ones are resolved lazily::
 
     from probirka import make_asgi_app, make_fastapi_endpoint, make_aiohttp_endpoint, make_django_view
 """
+
+from probirka._ext.asgi import make_asgi_app
+
+__all__ = ['make_asgi_app']

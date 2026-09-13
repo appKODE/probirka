@@ -1,19 +1,17 @@
-from typing import Any, Awaitable, Callable, Optional, Union
-from unittest.mock import MagicMock
-
-import pytest
 import asyncio
 import time
+from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, patch
+from typing import Any
+from unittest.mock import MagicMock, patch
 
-from probirka import Probe
-from probirka._probes import ProbeBase, CallableProbe
-from probirka._results import ProbeResult
+import pytest
+
+from probirka import CallableProbe, Probe, ProbeBase, ProbeResult
 
 
 @pytest.mark.parametrize(
-    ['probe_result', 'is_ok'],
+    ('probe_result', 'is_ok'),
     [
         pytest.param(True, True),
         pytest.param(False, False),
@@ -23,9 +21,9 @@ from probirka._results import ProbeResult
 )
 @pytest.mark.asyncio
 async def test_run_check(
-    probe_result: Union[MagicMock, Optional[bool]],
+    probe_result: MagicMock | bool | None,
     is_ok: bool,
-    make_testing_probe: Callable[[Union[MagicMock, Optional[bool]]], Probe],
+    make_testing_probe: Callable[[MagicMock | bool | None], Probe],
 ) -> None:
     probe = make_testing_probe(probe_result)
     results = await probe.run_check()
@@ -39,12 +37,12 @@ class TestProbeBase:
 
     def test_init_with_default_values(self) -> None:
         probe = self.ConcreteProbe()
-        assert probe._name == "ConcreteProbe"
+        assert probe._name == 'ConcreteProbe'
         assert probe._timeout is None
 
     def test_init_with_custom_values(self) -> None:
-        probe = self.ConcreteProbe(name="CustomProbe", timeout=5)
-        assert probe._name == "CustomProbe"
+        probe = self.ConcreteProbe(name='CustomProbe', timeout=5)
+        assert probe._name == 'CustomProbe'
         assert probe._timeout == 5
 
     @pytest.mark.asyncio
@@ -56,7 +54,7 @@ class TestProbeBase:
         assert result.ok is True
         assert isinstance(result.started_at, datetime)
         assert isinstance(result.elapsed, timedelta)
-        assert result.name == "ConcreteProbe"
+        assert result.name == 'ConcreteProbe'
         assert result.error is None
 
     @pytest.mark.asyncio
@@ -70,20 +68,20 @@ class TestProbeBase:
         result = await probe.run_check()
 
         assert result.ok is False
-        assert result.error == "TimeoutError: probe timed out after 0.1s"
+        assert result.error == 'TimeoutError: probe timed out after 0.1s'
         assert result.elapsed < timedelta(seconds=0.4)
 
     @pytest.mark.asyncio
     async def test_run_check_with_exception(self) -> None:
         class FailingProbe(ProbeBase):
             async def _check(self) -> bool:
-                raise ValueError("Test error")
+                raise ValueError('Test error')
 
         probe = FailingProbe()
         result = await probe.run_check()
 
         assert result.ok is False
-        assert result.error == "ValueError: Test error"
+        assert result.error == 'ValueError: Test error'
 
     @pytest.mark.asyncio
     async def test_run_check_with_exception_without_message(self) -> None:
@@ -94,13 +92,13 @@ class TestProbeBase:
         result = await FailingProbe().run_check()
 
         assert result.ok is False
-        assert result.error == "RuntimeError"
+        assert result.error == 'RuntimeError'
 
     @pytest.mark.asyncio
     async def test_run_check_result_is_always_bool(self) -> None:
         class TruthyProbe(ProbeBase):
             async def _check(self) -> Any:
-                return "yes"
+                return 'yes'
 
         result = await TruthyProbe().run_check()
 
@@ -114,8 +112,8 @@ class TestProbeBase:
             IncompleteProbe()  # type: ignore[abstract]
 
     def test_name_property(self) -> None:
-        assert self.ConcreteProbe().name == "ConcreteProbe"
-        assert self.ConcreteProbe(name="custom").name == "custom"
+        assert self.ConcreteProbe().name == 'ConcreteProbe'
+        assert self.ConcreteProbe(name='custom').name == 'custom'
 
 
 class TestCallableProbe:
@@ -124,7 +122,7 @@ class TestCallableProbe:
             return True
 
         probe = CallableProbe(test_func)
-        assert probe._name == "test_func"
+        assert probe._name == 'test_func'
         assert probe._func == test_func
 
     def test_init_with_async_function(self) -> None:
@@ -132,7 +130,7 @@ class TestCallableProbe:
             return True
 
         probe = CallableProbe(test_func)
-        assert probe._name == "test_func"
+        assert probe._name == 'test_func'
         assert probe._func == test_func
 
     @pytest.mark.asyncio
@@ -163,7 +161,7 @@ class TestCallableProbe:
 
         assert isinstance(result, ProbeResult)
         assert result.ok is True
-        assert result.name == "test_func"
+        assert result.name == 'test_func'
 
     @pytest.mark.asyncio
     async def test_sync_function_respects_timeout(self) -> None:
@@ -176,7 +174,7 @@ class TestCallableProbe:
         result = await probe.run_check()
 
         assert result.ok is False
-        assert result.error == "TimeoutError: probe timed out after 0.1s"
+        assert result.error == 'TimeoutError: probe timed out after 0.1s'
         assert time.monotonic() - started < 0.4
 
     @pytest.mark.asyncio
@@ -209,13 +207,13 @@ class TestCallableProbe:
 
         assert isinstance(result, ProbeResult)
         assert result.ok is True
-        assert result.name == "test_func"
+        assert result.name == 'test_func'
 
 
 @pytest.mark.asyncio
 async def test_probe_caching() -> None:
     class TestProbe(ProbeBase):
-        def __init__(self, success_ttl: Optional[int] = None, failed_ttl: Optional[int] = None):
+        def __init__(self, success_ttl: int | None = None, failed_ttl: int | None = None) -> None:
             super().__init__(success_ttl=success_ttl, failed_ttl=failed_ttl)
             self._counter = 0
 
@@ -223,20 +221,20 @@ async def test_probe_caching() -> None:
             self._counter += 1
             return True
 
-    # Тест без кэширования
+    # no caching
     probe = TestProbe()
     result1 = await probe.run_check()
     result2 = await probe.run_check()
     assert result1.ok is True
     assert result2.ok is True
     assert result1.cached is None
-    assert result2.cached is None  # Когда кэширование отключено, cached всегда None
+    assert result2.cached is None  # cached is always None when caching is off
     assert probe._counter == 2
 
-    # Тест с кэшированием успешного результата
+    # caching of a successful result
     probe = TestProbe(success_ttl=1)
     result1 = await probe.run_check()
-    await asyncio.sleep(0.1)  # Небольшая задержка, но меньше TTL
+    await asyncio.sleep(0.1)  # a short delay, below the TTL
     result2 = await probe.run_check()
     assert result1.ok is True
     assert result2.ok is True
@@ -244,16 +242,16 @@ async def test_probe_caching() -> None:
     assert result2.cached is True
     assert probe._counter == 1
 
-    # Проверка истечения срока действия кэша
-    await asyncio.sleep(1.1)  # Ждем, пока истечет TTL
+    # cache expiry
+    await asyncio.sleep(1.1)  # wait for the TTL to expire
     result3 = await probe.run_check()
     assert result3.ok is True
     assert result3.cached is False
     assert probe._counter == 2
 
-    # Тест с кэшированием неуспешного результата
+    # caching of a failed result
     class FailingProbe(ProbeBase):
-        def __init__(self, failed_ttl: Optional[int] = None):
+        def __init__(self, failed_ttl: int | None = None) -> None:
             super().__init__(failed_ttl=failed_ttl)
             self._counter = 0
 
@@ -263,7 +261,7 @@ async def test_probe_caching() -> None:
 
     probe = FailingProbe(failed_ttl=1)
     result1 = await probe.run_check()
-    await asyncio.sleep(0.1)  # Небольшая задержка, но меньше TTL
+    await asyncio.sleep(0.1)  # a short delay, below the TTL
     result2 = await probe.run_check()
     assert result1.ok is False
     assert result2.ok is False
@@ -271,8 +269,8 @@ async def test_probe_caching() -> None:
     assert result2.cached is True
     assert probe._counter == 1
 
-    # Проверка истечения срока действия кэша для неуспешного результата
-    await asyncio.sleep(1.1)  # Ждем, пока истечет TTL
+    # cache expiry of a failed result
+    await asyncio.sleep(1.1)  # wait for the TTL to expire
     result3 = await probe.run_check()
     assert result3.ok is False
     assert result3.cached is False
@@ -283,29 +281,29 @@ async def test_probe_caching() -> None:
 async def test_probe_info() -> None:
     class TestProbe(ProbeBase):
         async def _check(self) -> bool:
-            self.add_info("test_key", "test_value")
+            self.add_info('test_key', 'test_value')
             return True
 
     probe = TestProbe()
     result = await probe.run_check()
 
     assert result.ok is True
-    assert result.info == {"test_key": "test_value"}
+    assert result.info == {'test_key': 'test_value'}
 
 
 @pytest.mark.asyncio
 async def test_probe_info_caching() -> None:
     class TestProbe(ProbeBase):
-        def __init__(self, success_ttl: Optional[int] = None):
+        def __init__(self, success_ttl: int | None = None) -> None:
             super().__init__(success_ttl=success_ttl)
             self._counter = 0
 
         async def _check(self) -> bool:
             self._counter += 1
-            self.add_info("counter", self._counter)
+            self.add_info('counter', self._counter)
             return True
 
-    # Тест с кэшированием
+    # with caching
     probe = TestProbe(success_ttl=1)
     result1 = await probe.run_check()
     result2 = await probe.run_check()
@@ -314,8 +312,8 @@ async def test_probe_info_caching() -> None:
     assert result2.ok is True
     assert result1.cached is False
     assert result2.cached is True
-    assert result1.info == {"counter": 1}
-    assert result2.info == {"counter": 1}
+    assert result1.info == {'counter': 1}
+    assert result2.info == {'counter': 1}
     assert probe._counter == 1
 
 
@@ -329,7 +327,7 @@ async def test_probe_info_empty() -> None:
     result = await probe.run_check()
 
     assert result.ok is True
-    assert result.info == None
+    assert result.info is None
 
 
 @pytest.mark.asyncio
@@ -383,7 +381,7 @@ async def test_cache_ttl_survives_wall_clock_jumps() -> None:
     first = await probe.run_check()
 
     # The wall clock jumps a year ahead; the monotonic deadline must still hold the cache.
-    with patch('probirka._probes.datetime') as mock_datetime:
+    with patch('probirka._probes._base.datetime') as mock_datetime:
         mock_datetime.now.return_value = first.started_at + timedelta(days=365)
         second = await probe.run_check()
 
