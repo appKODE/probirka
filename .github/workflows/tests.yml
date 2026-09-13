@@ -4,6 +4,9 @@ name: 🧐 test
 on:
   pull_request:
     branches: [ main ]
+  # coverage for the README badge is read from the main branch, so it has to be reported from there too
+  push:
+    branches: [ main ]
 
 jobs:
   linters:
@@ -47,10 +50,24 @@ jobs:
       - run: just tests
       # the core must import without a single third-party package installed
       - run: uv run --isolated --no-project --with . python -c "import probirka; from probirka import *"
-      - uses: coverallsapp/github-action@master
+      # every matrix job reports as one part of a single Coveralls build, closed by the finish job below
+      - uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.github_token }}
-          path-to-lcov: tests.lcov
+          file: tests.lcov
+          flag-name: python-${{ matrix.python-version }}
+          parallel: true
+
+  coverage-finish:
+    needs: tests
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.github_token }}
+          parallel-finished: true
+
   integration:
     runs-on: ubuntu-latest
     services:
