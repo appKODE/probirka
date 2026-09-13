@@ -9,7 +9,7 @@ import django
 from django.conf import settings
 
 from probirka import Probirka
-from tests.helpers import FailureProbe, SlowProbe, SuccessProbe
+from tests.helpers import FailureProbe, LeakyConfig, SlowProbe, SuccessProbe
 
 if not settings.configured:
     settings.configure(
@@ -158,3 +158,22 @@ def test_head_allowed(probirka: Probirka, make_client: Callable[[View], Client])
 
     assert response.status_code == 200
     assert response.content == b''
+
+
+def test_secrets_are_masked_in_response(probirka: Probirka, make_client: Callable[[View], Client]) -> None:
+    probirka.add_info('password', 'hunter2')
+    probirka.add_info('dsn', 'postgresql://app:hunter2@db/app')
+    probirka.add_info('config', LeakyConfig())
+    probirka.add_probes(SuccessProbe())
+    client = make_client(make_django_view(probirka))
+
+    response = client.get('/health')
+
+    assert response.status_code == 200
+    assert response['Content-Type'] == 'application/json'
+    assert b'hunter2' not in response.content
+    assert response.json()['info'] == {
+        'password': '***',
+        'dsn': 'postgresql://app:***@db/app',
+        'config': 'postgresql://app:***@db:5432/app',
+    }

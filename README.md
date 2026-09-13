@@ -228,6 +228,17 @@ class DatabaseProbe(ProbeBase):
         return True
 ```
 
+## Secrets
+
+Health endpoints are rarely behind authentication, and the `error` field carries whatever message the client library produced — which for a wrong password or an unreachable host is often the whole connection string. Probirka masks secrets before they reach the response:
+
+* **Known values.** Every ready-made probe registers the password of its connection string (as written, URL-decoded and as the `Basic` credentials HTTP clients derive from it) and the values of its request headers. Wherever they show up in an exception message, `ProbeResult.error` has `'***'` instead: `'InvalidPasswordError: ... postgresql://app:***@db/app'`. A custom probe can do the same with `self._register_secrets(value, ...)`.
+* **Shape-based.** `to_dict()` walks `info` and masks values under keys that look sensitive (`password`, `api_key`, `Authorization`, `secret_ttl`, ... — the same heuristic Django uses for its error pages), and passwords in URLs and query parameters like `?token=` in every string, `error` included. Objects that are not JSON types are written as their `str()`, masked the same way.
+
+The user name, host, port and database are kept, as they are what makes the message useful. Masking is on by default, so all HTTP integrations return masked output; `result.to_dict(redact=False)` gives the raw data for your own handler. The helpers are available too: `probirka.mask_url('redis://:s3cret@cache/0')` returns `'redis://:***@cache/0'`, `probirka.redact_value(mapping)` cleans a dictionary.
+
+Masking is a safety net, not a substitute for care: only what a probe knows about or what looks like a secret is caught, so do not put credentials into `info` in the first place.
+
 ## Groups
 
 Some checks may be too expensive or too slow to run on every health request. Put them into an optional group:
@@ -496,7 +507,7 @@ for check in result.checks:
     )
 ```
 
-`result.to_dict()` converts it to a JSON-compatible dictionary, which is what every HTTP integration returns and what monitoring systems consume.
+`result.to_dict()` converts it to a JSON-compatible dictionary, which is what every HTTP integration returns and what monitoring systems consume. Secrets in `info` and `error` are masked on the way, see [Secrets](#secrets); `to_dict(redact=False)` skips that.
 
 ## Why Probirka?
 

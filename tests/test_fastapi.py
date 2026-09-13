@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from probirka import Probirka
 from probirka import make_fastapi_endpoint
-from tests.helpers import FailureProbe, SlowProbe, SuccessProbe
+from tests.helpers import FailureProbe, LeakyConfig, SlowProbe, SuccessProbe
 
 
 
@@ -142,3 +142,20 @@ def test_timeout_returns_error_code(probirka: Probirka) -> None:
     assert response_data["error"] == "TimeoutError: probirka run timed out after 0.1s"
     assert response_data["checks"][0]["ok"] is False
     assert response_data["checks"][0]["error"] == "TimeoutError: probirka run timed out after 0.1s"
+
+
+def test_secrets_are_masked_in_response(test_client: TestClient, probirka: Probirka) -> None:
+    probirka.add_info('password', 'hunter2')
+    probirka.add_info('dsn', 'postgresql://app:hunter2@db/app')
+    probirka.add_info('config', LeakyConfig())  # not a JSON type: its str() is written, masked
+    probirka.add_probes(SuccessProbe())
+
+    response = test_client.get('/health')
+
+    assert response.status_code == status.HTTP_200_OK
+    assert 'hunter2' not in response.text
+    assert response.json()['info'] == {
+        'password': '***',
+        'dsn': 'postgresql://app:***@db/app',
+        'config': 'postgresql://app:***@db:5432/app',
+    }

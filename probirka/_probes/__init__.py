@@ -8,6 +8,7 @@ from inspect import isawaitable, iscoroutinefunction
 from time import monotonic
 from typing import Any, Protocol, TypeAlias
 
+from probirka._redact import redact_secrets
 from probirka._results import ProbeResult
 
 ProbeCallable: TypeAlias = Callable[[], bool | Awaitable[bool | None] | None]
@@ -83,6 +84,7 @@ class ProbeBase(ABC):
         self._last_result: ProbeResult | None = None
         self._cache_until: float | None = None
         self._info: dict[str, Any] | None = None
+        self._secrets: tuple[str, ...] = ()
 
     @property
     def name(
@@ -132,6 +134,22 @@ class ProbeBase(ABC):
         """
         return self._info
 
+    def _register_secrets(
+        self,
+        *values: str,
+    ) -> None:
+        """
+        Remember values that must never appear in :attr:`ProbeResult.error`.
+
+        Ready-made probes register the password of their connection string and the values of
+        their request headers; a custom probe can register whatever it hands to a client
+        library. When a check fails, every occurrence of these values in the exception message
+        is replaced with ``'***'``. Values shorter than four characters are ignored.
+
+        :param values: The secret values.
+        """
+        self._secrets = (*self._secrets, *values)
+
     @abstractmethod
     async def _check(
         self,
@@ -179,7 +197,7 @@ class ProbeBase(ABC):
             error = f'TimeoutError: probe timed out after {self._timeout}s'
         except Exception as exc:
             ok = False
-            error = format_error(exc)
+            error = redact_secrets(format_error(exc), self._secrets)
 
         probe_result = ProbeResult(
             ok=ok,

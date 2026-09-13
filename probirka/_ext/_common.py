@@ -4,10 +4,27 @@ import json
 
 from collections.abc import Sequence
 
+from typing import Any
+
 from probirka._probirka import Probirka
+from probirka._redact import redact_string
 
 JSON_CONTENT_TYPE = 'application/json'
 """Content type of a rendered body, spelled the same way by every adapter."""
+
+
+def json_default(obj: Any) -> str:
+    """
+    Serialize a value ``json.dumps`` does not know, as found in ``info``.
+
+    Writes the ``str()`` of the object with URL passwords and sensitive query parameters masked,
+    so a ``yarl.URL`` or a settings object whose ``__str__`` includes credentials does not leak
+    them into the response.
+
+    :param obj: The value to serialize.
+    :return: Its cleaned string form.
+    """
+    return redact_string(str(obj))
 
 
 async def run_and_render(
@@ -23,7 +40,8 @@ async def run_and_render(
     Run the probes and turn the outcome into a status code and a response body.
 
     The single place where the JSON contract shared by the adapters lives. ``info`` may hold
-    arbitrary objects, so the dump falls back to ``str`` instead of raising.
+    arbitrary objects, so the dump falls back to :func:`json_default` instead of raising.
+    Secrets are masked: see :meth:`ProbirkaResult.to_dict`.
 
     :param probirka: The Probirka instance to run.
     :param timeout: The timeout for the Probirka run.
@@ -43,4 +61,4 @@ async def run_and_render(
     status_code = success_code if res.ok else error_code
     if not return_results:
         return status_code, None
-    return status_code, json.dumps(obj=res.to_dict(), default=str).encode()
+    return status_code, json.dumps(obj=res.to_dict(), default=json_default).encode()

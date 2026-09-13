@@ -54,6 +54,8 @@ async def test_wrong_password(postgres_dsn: str) -> None:
     assert result.ok is False
     assert result.error is not None
     assert result.error.startswith('InvalidPasswordError')
+    assert 'wrong' not in result.error
+    assert 'wrong' not in str(result.to_dict())
 
 
 @pytest.mark.asyncio

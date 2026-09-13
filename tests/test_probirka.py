@@ -3,7 +3,7 @@ import json
 from datetime import datetime, timedelta
 
 import pytest
-from probirka import Probirka
+from probirka import ProbeBase, Probirka
 from tests.helpers import FailureProbe, SlowProbe
 
 
@@ -412,3 +412,26 @@ async def test_to_dict_contains_allow_failure() -> None:
     assert data['ok'] is True
     assert data['checks'][0]['allow_failure'] is True
     assert json.loads(json.dumps(data)) == data
+
+
+@pytest.mark.asyncio
+async def test_to_dict_masks_secrets_by_default() -> None:
+    checks = Probirka()
+    checks.add_info('version', '1.0')
+    checks.add_info('api_key', 'abc')
+    checks.add_info('broker', 'amqp://guest:guest@mq/')
+
+    class _Probe(ProbeBase):
+        async def _check(self) -> bool:
+            self.add_info('password', 'hunter2')
+            return True
+
+    checks.add_probes(_Probe())
+
+    data = (await checks.run()).to_dict()
+    raw = (await checks.run()).to_dict(redact=False)
+
+    assert data['info'] == {'version': '1.0', 'api_key': '***', 'broker': 'amqp://guest:***@mq/'}
+    assert data['checks'][0]['info'] == {'password': '***'}
+    assert raw['info'] == {'version': '1.0', 'api_key': 'abc', 'broker': 'amqp://guest:guest@mq/'}
+    assert raw['checks'][0]['info'] == {'password': 'hunter2'}

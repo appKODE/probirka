@@ -12,7 +12,7 @@ from aiohttp.test_utils import TestClient, TestServer
 from probirka import Probirka
 from probirka._results import ProbirkaResult, ProbeResult
 from probirka import make_aiohttp_endpoint
-from tests.helpers import FailureProbe, SlowProbe, SuccessProbe
+from tests.helpers import FailureProbe, LeakyConfig, SlowProbe, SuccessProbe
 
 
 
@@ -155,3 +155,25 @@ async def test_timeout_returns_error_code(probirka: Probirka) -> None:
             assert response_data["error"] == "TimeoutError: probirka run timed out after 0.1s"
             assert response_data["checks"][0]["ok"] is False
             assert response_data["checks"][0]["error"] == "TimeoutError: probirka run timed out after 0.1s"
+
+
+@pytest.mark.asyncio
+async def test_secrets_are_masked_in_response(probirka: Probirka) -> None:
+    app = web.Application()
+    app.router.add_get('/health', make_aiohttp_endpoint(probirka))
+    probirka.add_info('password', 'hunter2')
+    probirka.add_info('dsn', 'postgresql://app:hunter2@db/app')
+    probirka.add_info('config', LeakyConfig())
+    probirka.add_probes(SuccessProbe())
+
+    async with TestClient(TestServer(app)) as client, client.get('/health') as response:
+        assert response.status == 200
+        assert response.content_type == 'application/json'
+        text = await response.text()
+
+    assert 'hunter2' not in text
+    assert json.loads(text)['info'] == {
+        'password': '***',
+        'dsn': 'postgresql://app:***@db/app',
+        'config': 'postgresql://app:***@db:5432/app',
+    }

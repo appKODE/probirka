@@ -443,3 +443,51 @@ async def test_callable_probe_allow_failure() -> None:
     assert result.ok is False
     assert result.allow_failure is True
     assert result.to_dict()['allow_failure'] is True
+
+
+@pytest.mark.asyncio
+async def test_registered_secrets_are_masked_in_error() -> None:
+    class _Probe(ProbeBase):
+        def __init__(self) -> None:
+            super().__init__()
+            self._register_secrets('hunter2', 'p%40ss', 'p@ss')
+
+        async def _check(self) -> bool:
+            raise RuntimeError('postgresql://app:hunter2@db/app rejected p%40ss (p@ss)')
+
+    result = await _Probe().run_check()
+
+    assert result.error == 'RuntimeError: postgresql://app:***@db/app rejected *** (***)'
+
+
+@pytest.mark.asyncio
+async def test_secrets_are_not_touched_in_info_of_the_probe_itself() -> None:
+    class _Probe(ProbeBase):
+        def __init__(self) -> None:
+            super().__init__()
+            self._register_secrets('hunter2')
+
+        async def _check(self) -> bool:
+            self.add_info('password', 'hunter2')
+            self.add_info('dsn', 'postgresql://app:hunter2@db/app')
+            return True
+
+    result = await _Probe().run_check()
+
+    # the dataclass keeps what the probe produced, ``to_dict`` is where masking happens
+    assert result.info == {'password': 'hunter2', 'dsn': 'postgresql://app:hunter2@db/app'}
+    assert result.to_dict()['info'] == {'password': '***', 'dsn': 'postgresql://app:***@db/app'}
+    assert result.to_dict(redact=False)['info'] == result.info
+
+
+@pytest.mark.asyncio
+async def test_to_dict_masks_url_password_in_error() -> None:
+    class _Probe(ProbeBase):
+        async def _check(self) -> bool:
+            raise RuntimeError('cannot reach amqp://guest:guest@mq/')
+
+    result = await _Probe().run_check()
+
+    assert result.error == 'RuntimeError: cannot reach amqp://guest:guest@mq/'
+    assert result.to_dict()['error'] == 'RuntimeError: cannot reach amqp://guest:***@mq/'
+    assert result.to_dict(redact=False)['error'] == result.error

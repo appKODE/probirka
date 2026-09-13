@@ -19,6 +19,15 @@ Core Classes
    :undoc-members:
    :show-inheritance:
 
+Secrets
+-------
+
+``MASK``, ``mask_url`` and ``redact_value`` are importable from the ``probirka`` package.
+
+.. automodule:: probirka._redact
+   :members:
+   :undoc-members:
+
 Ready-made Probes
 -----------------
 

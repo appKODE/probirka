@@ -6,9 +6,12 @@
 - `allow_failure` for non-critical probes, named after the GitLab CI option: `ProbeBase(allow_failure=True)`, `@probirka.add(allow_failure=True)` and the same keyword on every ready-made probe. Such a probe runs and is reported as usual, but its failure or timeout does not affect the top-level `ok`, so HTTP integrations keep returning `success_code`
 - Group-level override: `add_probes(..., groups='external', allow_failure=True)` (or `False`) applies to every probe of the group, replacing the probes' own setting; `None` (default) keeps it. A probe run through several sources (the required list, several groups) is allowed to fail only if every source allows it. Passing `allow_failure` without `groups` raises `ValueError`
 - `ProbeResult.allow_failure` (also in `to_dict()` and the HTTP JSON) with the effective value for the run
+- Secrets are masked in health check output. Every ready-made probe registers the password of its connection string (as written, URL-decoded and as the `Basic` credentials httpx and aiohttp derive from `user:pass@`) and the values of its request headers, and `ProbeResult.error` has `'***'` wherever a client library echoed them. `to_dict()` additionally masks values of `info` under sensitive-looking keys (`password`, `api_key`, `Authorization`, ...) and passwords in URLs and `?token=`-like query parameters in every string, `error` included. `ProbeBase._register_secrets()` does the same for custom probes; `probirka.mask_url()`, `probirka.redact_value()` and `probirka.MASK` are exported for your own handlers. See [Secrets](README.md#secrets)
 
 ### Changed
 - `ProbirkaResult.ok` is `True` when every probe without `allow_failure` passed; the overall timeout sets `ok=False` only if a probe without `allow_failure` did not finish, while `error` still reports the timeout
+- `to_dict()` masks secrets by default (see above); `to_dict(redact=False)` returns `info` and `error` exactly as produced. The HTTP integrations always return masked output
+- All HTTP integrations render the body through the same `json.dumps(..., default=...)` call; the FastAPI adapter no longer uses `fastapi.encoders.jsonable_encoder`, which fell back to `vars(obj)` for arbitrary objects in `info` and thereby serialized their whole `__dict__`. Objects that are not JSON types are now written as their `str()` in every integration
 
 ## [0.7.0] - 2026-09-12
 

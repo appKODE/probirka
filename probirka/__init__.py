@@ -9,6 +9,7 @@ from probirka._probes import CallableProbe, Probe, ProbeBase
 from probirka._probes._common import ClientOrFactory, ProbeFailure
 from probirka._probes._tcp import TcpProbe
 from probirka._probirka import Probirka
+from probirka._redact import MASK, mask_url, redact_value
 from probirka._results import ProbirkaResult, ProbeResult
 
 if TYPE_CHECKING:
@@ -78,6 +79,7 @@ def _installed(import_name: str) -> bool:
 # and still works with nothing but probirka installed. ``make_asgi_app`` is in the first group:
 # it speaks the ASGI protocol directly, so it needs no framework to be installed.
 __all__ = [
+    'MASK',
     'CallableProbe',
     'ClientOrFactory',
     'MissingDependencyError',
@@ -89,6 +91,8 @@ __all__ = [
     'ProbirkaResult',
     'TcpProbe',
     'make_asgi_app',
+    'mask_url',
+    'redact_value',
 ]
 __all__ += [name for name, (_, import_name, _) in sorted(_LAZY.items()) if _installed(import_name)]
 

@@ -8,6 +8,7 @@ from redis.asyncio import Redis
 
 from probirka._probes._client_base import ClientProbeBase
 from probirka._probes._common import ClientOrFactory, ProbeFailure, require_exactly_one
+from probirka._redact import secrets_from_url
 
 
 class RedisProbe(ClientProbeBase):
@@ -50,6 +51,7 @@ class RedisProbe(ClientProbeBase):
         )
         self._client = client
         self._url = url
+        self._register_secrets(*secrets_from_url(url))
 
     def _temporary_client(self) -> AbstractAsyncContextManager[Any]:
         assert self._url is not None

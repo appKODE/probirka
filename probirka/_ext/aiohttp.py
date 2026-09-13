@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-import json
-
 from collections.abc import Callable, Coroutine, Sequence
 from typing import Any
 
 from aiohttp import web
 
+from probirka._ext._common import JSON_CONTENT_TYPE, run_and_render
 from probirka._probirka import Probirka
 
 
@@ -47,22 +46,17 @@ def make_aiohttp_endpoint(
         Returns:
             web.Response: The HTTP response with the Probirka results.
         """
-        res = await probirka.run(
+        status_code, body = await run_and_render(
+            probirka=probirka,
             timeout=timeout,
             with_groups=with_groups,
             skip_required=skip_required,
+            return_results=return_results,
+            success_code=success_code,
+            error_code=error_code,
         )
-        status_code = success_code if res.ok else error_code
-        return (
-            web.json_response(
-                text=json.dumps(obj=res.to_dict(), default=str),
-                status=status_code,
-            )
-            if return_results
-            else web.Response(
-                body='',
-                status=status_code,
-            )
-        )
+        if body is None:
+            return web.Response(body='', status=status_code)
+        return web.Response(body=body, status=status_code, content_type=JSON_CONTENT_TYPE)
 
     return endpoint

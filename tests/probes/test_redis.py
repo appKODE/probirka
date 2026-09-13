@@ -97,3 +97,15 @@ async def test_url_closes_client_on_error(monkeypatch: pytest.MonkeyPatch) -> No
 def test_real_redis_client_is_an_async_context_manager() -> None:
     assert hasattr(redis.asyncio.Redis, '__aenter__')
     assert hasattr(redis.asyncio.Redis, '__aexit__')
+
+
+@pytest.mark.asyncio
+async def test_url_password_is_masked_in_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    url = 'redis://:hunter2@localhost:6379/0'
+    client = make_url_client(AsyncMock(side_effect=redis.ConnectionError(f'Error connecting to {url}')))
+    monkeypatch.setattr(redis.asyncio.Redis, 'from_url', MagicMock(return_value=client))
+
+    result = await RedisProbe(url=url).run_check()
+
+    assert result.ok is False
+    assert result.error == 'ConnectionError: Error connecting to redis://:***@localhost:6379/0'

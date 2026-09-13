@@ -80,3 +80,15 @@ async def test_url_without_timeout_keeps_driver_default(monkeypatch: pytest.Monk
     assert result.error == 'RuntimeError: boom'
     client_cls.assert_called_once_with('mongodb://localhost:27017')
     client.close.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_url_password_is_masked_in_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    url = 'mongodb://app:hunter2@localhost:27017/db'
+    client = make_client(side_effect=ServerSelectionTimeoutError(f'{url}: [Errno 61] Connection refused'))
+    monkeypatch.setattr(mongo_module, 'AsyncMongoClient', MagicMock(return_value=client))
+
+    result = await MongoPymongoProbe(url=url).run_check()
+
+    assert result.ok is False
+    assert result.error == 'ServerSelectionTimeoutError: mongodb://app:***@localhost:27017/db: [Errno 61] Connection refused'

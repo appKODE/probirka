@@ -7,7 +7,7 @@ from typing import Any, NamedTuple
 import pytest
 
 from probirka import Probirka, make_asgi_app
-from tests.helpers import FailureProbe, SlowProbe, SuccessProbe
+from tests.helpers import FailureProbe, LeakyConfig, SlowProbe, SuccessProbe
 
 ASGIApp = Callable[..., Any]
 
@@ -303,3 +303,21 @@ async def test_allowed_failure_returns_success_code(probirka: Probirka) -> None:
     assert data['ok'] is True
     assert data['checks'][1]['ok'] is False
     assert data['checks'][1]['allow_failure'] is True
+
+
+@pytest.mark.asyncio
+async def test_secrets_are_masked_in_response(probirka: Probirka) -> None:
+    probirka.add_info('password', 'hunter2')
+    probirka.add_info('dsn', 'postgresql://app:hunter2@db/app')
+    probirka.add_info('config', LeakyConfig())
+    probirka.add_probes(SuccessProbe())
+
+    response = await call(make_asgi_app(probirka))
+
+    assert response.status_code == 200
+    assert b'hunter2' not in response.body
+    assert response.json()['info'] == {
+        'password': '***',
+        'dsn': 'postgresql://app:***@db/app',
+        'config': 'postgresql://app:***@db:5432/app',
+    }
