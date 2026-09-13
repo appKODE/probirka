@@ -2,6 +2,8 @@ from typing import Any
 
 import pytest
 
+from probirka import HttpProbePolicy
+
 _PROBES: list[Any] = []
 
 for package, probe_name in (
@@ -69,3 +71,24 @@ async def test_connection_refused(probe_cls: type, unreachable_port: int) -> Non
     assert result.ok is False
     assert result.error is not None
     assert 'ProbeFailure' not in result.error
+
+
+@pytest.mark.parametrize('probe_cls', _PROBES)
+@pytest.mark.asyncio
+async def test_block_private_networks_refuses_localhost(probe_cls: type, http_url: str) -> None:
+    result = await probe_cls(http_url, policy=HttpProbePolicy(block_private_networks=True)).run_check()
+
+    assert result.ok is False
+    assert result.error is not None
+    assert result.error.startswith('HttpProbePolicyViolation: ')
+    assert result.error.endswith('is not a global address')
+
+
+@pytest.mark.parametrize('probe_cls', _PROBES)
+@pytest.mark.asyncio
+async def test_allowed_networks_exempt_localhost(probe_cls: type, http_url: str) -> None:
+    policy = HttpProbePolicy(block_private_networks=True, allowed_networks=('127.0.0.0/8', '::1/128'))
+
+    result = await probe_cls(http_url, policy=policy).run_check()
+
+    assert result.ok is True

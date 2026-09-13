@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 import httpx2
@@ -18,6 +19,12 @@ class HttpHttpx2Probe(HttpProbeBase):
         # the probe timeout is the only limit; httpx2 would otherwise apply its own 5 s default
         return httpx2.AsyncClient(timeout=self._timeout)
 
-    async def _request_status(self, client: Any) -> int:
-        response = await client.request(self._method, self._url, headers=self._headers)
-        return int(response.status_code)
+    async def _request(
+        self,
+        client: Any,
+        method: str,
+        url: str,
+        headers: Mapping[str, str] | None,
+    ) -> tuple[int, str | None]:
+        response = await client.request(method, url, headers=headers, follow_redirects=False)
+        return int(response.status_code), response.headers.get('location')

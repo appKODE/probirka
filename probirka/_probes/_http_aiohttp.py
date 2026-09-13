@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 import aiohttp
@@ -19,6 +20,12 @@ class HttpAiohttpProbe(HttpProbeBase):
         # the probe timeout is the only limit; aiohttp would otherwise apply its own 5 min default
         return aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=self._timeout))
 
-    async def _request_status(self, client: Any) -> int:
-        async with client.request(self._method, self._url, headers=self._headers) as response:
-            return int(response.status)
+    async def _request(
+        self,
+        client: Any,
+        method: str,
+        url: str,
+        headers: Mapping[str, str] | None,
+    ) -> tuple[int, str | None]:
+        async with client.request(method, url, headers=headers, allow_redirects=False) as response:
+            return int(response.status), response.headers.get('Location')

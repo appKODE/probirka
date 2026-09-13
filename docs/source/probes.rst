@@ -127,6 +127,69 @@ cuts a check short. When you pass your own client, its timeout settings apply as
        ),
    )
 
+Security policy
+~~~~~~~~~~~~~~~
+
+An HTTP probe requests whatever URL it was configured with. When that URL comes from a config file
+or an admin UI, or when the target answers with a redirect, the probe can be pointed at an internal
+service or at a cloud metadata endpoint such as ``http://169.254.169.254/``, the classic
+server-side request forgery. :class:`HttpProbePolicy` limits what the HTTP probes will contact:
+
+.. code-block:: python
+
+   from probirka import HttpHttpxProbe, HttpProbePolicy
+
+   policy = HttpProbePolicy(
+       allowed_hosts=("api.example.com", "*.example.com"),
+       block_private_networks=True,
+       allowed_networks=("10.20.0.0/16",),  # our own service mesh
+       follow_redirects=True,
+       max_redirects=3,
+   )
+
+   probirka.add_probes(HttpHttpxProbe("https://api.example.com/health", policy=policy, timeout=3))
+
+The defaults are deliberately soft, because health checks usually target internal services: any
+``http`` or ``https`` URL is accepted, no network is blocked, and redirects are not followed (a
+``302`` is an ordinary status code compared with ``expected_status``). Everything stricter is
+opt-in:
+
+``allowed_schemes``
+   ``("http", "https")`` by default; ``("https",)`` also refuses a redirect that downgrades to
+   plain HTTP.
+``allowed_hosts``
+   Host names the probe may request, exactly or as ``*.example.com`` for any subdomain (not
+   ``example.com`` itself). ``None``, the default, allows any host.
+``block_private_networks``
+   Refuses every address that is not globally routable: loopback, the RFC 1918 and ``fc00::/7``
+   private ranges, link-local including ``169.254.169.254``, carrier-grade NAT, multicast,
+   unspecified and reserved ranges.
+``blocked_networks`` and ``allowed_networks``
+   Your own CIDR lists. ``allowed_networks`` wins, so "no private networks except our mesh" is
+   ``block_private_networks=True, allowed_networks=("10.20.0.0/16",)``.
+``follow_redirects`` and ``max_redirects``
+   See below.
+
+The URL is checked when the probe is created; a refused URL is a :class:`ValueError`, so a
+misconfiguration surfaces at startup rather than in the health output. Before every request the
+URL is checked again, and when a network rule is set the host name is resolved first: the request
+is refused if *any* resolved address is blocked, reported as
+``'HttpProbePolicyViolation: internal.svc resolves to 10.0.0.5, which is not a global address'``.
+:class:`HttpProbePolicyViolation` is a :class:`ProbeFailure`, so ``allow_failure`` applies as usual.
+
+Redirects are never left to the client library. Every request is sent with automatic following
+disabled, and with ``follow_redirects=True`` the probe follows ``301``, ``302``, ``303``, ``307``
+and ``308`` itself: each target is checked against the policy before it is requested, ``POST``
+becomes ``GET`` on ``301``, ``302`` and ``303`` as browsers do, and the request ``headers`` are
+dropped when the target is another origin, so an ``Authorization`` header meant for your API never
+reaches a third party. More than ``max_redirects`` hops is a failure. This is the same for httpx,
+httpx2 and aiohttp, which means ``HttpAiohttpProbe`` no longer follows redirects unless asked to.
+
+Limitations: the probe resolves the name and then the client library resolves it again, so a
+resolver that answers differently the second time (DNS rebinding) can still reach a blocked
+address; a proxy configured on your own client is not inspected. The policy narrows what a probe
+does, it does not replace network-level controls.
+
 TCP probe
 ---------
 
