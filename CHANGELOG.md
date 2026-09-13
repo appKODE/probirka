@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.8.0] - 2026-09-13
 
 ### Added
 - `allow_failure` for non-critical probes, named after the GitLab CI option: `ProbeBase(allow_failure=True)`, `@probirka.add(allow_failure=True)` and the same keyword on every ready-made probe. Such a probe runs and is reported as usual, but its failure or timeout does not affect the top-level `ok`, so HTTP integrations keep returning `success_code`
