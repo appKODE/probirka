@@ -18,7 +18,6 @@ what makes an error message useful, and it is what SQLAlchemy and Celery do as w
 from __future__ import annotations
 
 import re
-
 from base64 import b64encode
 from collections.abc import Iterable, Mapping
 from typing import Any
@@ -68,7 +67,7 @@ def mask_url(url: str, mask: str = MASK) -> str:
 
 def secrets_from_url(url: str | None) -> tuple[str, ...]:
     """
-    The password of a URL in every form a client library may echo it.
+    Return the password of a URL in every form a client library may echo it.
 
     As written in the URL (``p%40ss``), decoded (``p@ss``), and as the HTTP basic auth
     credentials HTTP clients derive from the user info (``Basic`` + base64 of ``user:password``):
@@ -98,7 +97,7 @@ def secrets_from_url(url: str | None) -> tuple[str, ...]:
 
 def secrets_from_headers(headers: Mapping[str, str] | None) -> tuple[str, ...]:
     """
-    The values of request headers, whole and without an auth scheme prefix.
+    Return the values of request headers, whole and without an auth scheme prefix.
 
     Every header value is treated as a secret: a probe sends only what is needed to be let
     in, and a ``Bearer`` token is a secret even under a custom header name. For

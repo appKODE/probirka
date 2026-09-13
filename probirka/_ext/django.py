@@ -1,12 +1,15 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Coroutine, Sequence
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from django.http import HttpRequest, HttpResponse, HttpResponseNotAllowed
 
 from probirka._ext._common import JSON_CONTENT_TYPE, run_and_render
-from probirka._probirka import Probirka
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Coroutine, Sequence
+
+    from probirka._probirka import Probirka
 
 _ALLOWED_METHODS = ('GET', 'HEAD')
 
@@ -41,7 +44,7 @@ def make_django_view(
 
     async def view(request: HttpRequest) -> HttpResponse:
         """
-        The Django view that runs the Probirka instance.
+        Run the Probirka instance and return the Django response.
 
         Args:
             request: The Django request object.

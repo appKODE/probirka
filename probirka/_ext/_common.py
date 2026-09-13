@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import json
+from typing import TYPE_CHECKING, Any
 
-from collections.abc import Sequence
-
-from typing import Any
-
-from probirka._probirka import Probirka
 from probirka._redact import redact_string
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from probirka._probirka import Probirka
 
 JSON_CONTENT_TYPE = 'application/json'
 """Content type of a rendered body, spelled the same way by every adapter."""

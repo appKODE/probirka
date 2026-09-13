@@ -1,15 +1,18 @@
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from datetime import timedelta
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import aio_pika
 
+from probirka._probe import ProbeFailure
 from probirka._probes._client_base import ClientProbeBase
-from probirka._probes._common import ClientOrFactory, ProbeFailure, require_exactly_one
+from probirka._probes._common import ClientOrFactory, require_exactly_one
 from probirka._redact import secrets_from_url
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+    from datetime import timedelta
 
 
 class RabbitmqAiopikaProbe(ClientProbeBase):
@@ -65,6 +68,7 @@ class RabbitmqAiopikaProbe(ClientProbeBase):
 
     async def _check_client(self, client: Any) -> None:
         if client.is_closed:
-            raise ProbeFailure('connection is closed')
+            msg = 'connection is closed'
+            raise ProbeFailure(msg)
         channel = await client.channel()
         await channel.close()

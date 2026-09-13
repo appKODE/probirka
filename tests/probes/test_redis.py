@@ -10,9 +10,9 @@ from probirka import RedisProbe
 
 
 def test_requires_client_or_url() -> None:
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='is required'):
         RedisProbe()
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='mutually exclusive'):
         RedisProbe(client=MagicMock(), url='redis://x')
 
 

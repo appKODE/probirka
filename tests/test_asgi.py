@@ -1,5 +1,4 @@
 import json
-
 from collections.abc import Callable
 from datetime import datetime
 from typing import Any, NamedTuple

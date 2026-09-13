@@ -11,15 +11,6 @@ ClientOrFactory: TypeAlias = T | Callable[[], T]
 """Either a ready client instance or a zero-argument function (lambda, ``functools.partial``) returning one."""
 
 
-class ProbeFailure(Exception):
-    """
-    Raised by a probe when the dependency answered, but not the way a healthy one should.
-
-    Examples: Redis replied to ``PING`` with something other than ``True``, an HTTP endpoint
-    returned an unexpected status code. The message ends up in :attr:`ProbeResult.error`.
-    """
-
-
 def resolve(client_or_factory: ClientOrFactory[T]) -> T:
     """
     Return the client itself, or call the factory to obtain it.
@@ -35,7 +26,7 @@ def resolve(client_or_factory: ClientOrFactory[T]) -> T:
     """
     if isroutine(client_or_factory) or isinstance(client_or_factory, partial):
         return client_or_factory()
-    return cast(T, client_or_factory)
+    return cast('T', client_or_factory)
 
 
 def require_exactly_one(**kwargs: Any) -> None:
@@ -48,6 +39,8 @@ def require_exactly_one(**kwargs: Any) -> None:
     provided = [name for name, value in kwargs.items() if value is not None]
     names = ', '.join(kwargs)
     if not provided:
-        raise ValueError(f'one of {names} is required')
+        msg = f'one of {names} is required'
+        raise ValueError(msg)
     if len(provided) > 1:
-        raise ValueError(f'{names} are mutually exclusive, got {", ".join(provided)}')
+        msg = f'{names} are mutually exclusive, got {", ".join(provided)}'
+        raise ValueError(msg)

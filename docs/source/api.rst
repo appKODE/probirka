@@ -4,7 +4,7 @@ API Reference
 Core Classes
 ------------
 
-.. automodule:: probirka._probes
+.. automodule:: probirka._probe
    :members:
    :undoc-members:
    :show-inheritance:
@@ -17,6 +17,10 @@ Core Classes
 .. automodule:: probirka._results
    :members:
    :undoc-members:
+   :show-inheritance:
+
+.. automodule:: probirka._lazy
+   :members: MissingDependencyError
    :show-inheritance:
 
 Secrets
@@ -35,7 +39,7 @@ All probes below are importable from the ``probirka`` package, e.g. ``from probi
 and so are ``HttpProbePolicy`` and ``HttpProbePolicyViolation``.
 
 .. automodule:: probirka._probes._common
-   :members: ProbeFailure, resolve
+   :members: resolve
    :show-inheritance:
 
 .. automodule:: probirka._probes._client_base

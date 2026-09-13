@@ -12,7 +12,10 @@ from probirka._redact import redact_secrets, redact_string, secrets_from_headers
         ('postgresql://app:hunter2@db:5432/app', 'postgresql://app:***@db:5432/app'),
         ('redis://:hunter2@cache:6379/0', 'redis://:***@cache:6379/0'),
         ('amqp://guest:guest@mq:5672/', 'amqp://guest:***@mq:5672/'),
-        ('mongodb://app:hunter2@h1:27017,h2:27017/db?replicaSet=rs', 'mongodb://app:***@h1:27017,h2:27017/db?replicaSet=rs'),
+        (
+            'mongodb://app:hunter2@h1:27017,h2:27017/db?replicaSet=rs',
+            'mongodb://app:***@h1:27017,h2:27017/db?replicaSet=rs',
+        ),
         ('postgresql://app:p%40ss%2Fword@db/app', 'postgresql://app:***@db/app'),
         ('https://user:pass@example.com/health?x=1#frag', 'https://user:***@example.com/health?x=1#frag'),
         # nothing to mask
@@ -73,7 +76,10 @@ def test_secrets_from_headers_include_the_token_without_the_scheme() -> None:
 def test_redact_secrets_replaces_every_known_value() -> None:
     text = 'connect to postgresql://app:hunter2@db failed, password "hunter2" rejected'
 
-    assert redact_secrets(text, ('hunter2',)) == f'connect to postgresql://app:{MASK}@db failed, password "{MASK}" rejected'
+    assert (
+        redact_secrets(text, ('hunter2',))
+        == f'connect to postgresql://app:{MASK}@db failed, password "{MASK}" rejected'
+    )
 
 
 def test_redact_secrets_longest_first() -> None:
@@ -92,7 +98,10 @@ def test_redact_secrets_ignores_short_and_empty_values() -> None:
         ('GET https://api/health?token=abc&x=1 failed', f'GET https://api/health?token={MASK}&x=1 failed'),
         ('https://api/health?x=1&api_key=abc', f'https://api/health?x=1&api_key={MASK}'),
         ('https://api/health?Signature=abc#frag', f'https://api/health?Signature={MASK}#frag'),
-        ('ConnectionRefusedError: [Errno 61] Connect call failed', 'ConnectionRefusedError: [Errno 61] Connect call failed'),
+        (
+            'ConnectionRefusedError: [Errno 61] Connect call failed',
+            'ConnectionRefusedError: [Errno 61] Connect call failed',
+        ),
         ('redis://localhost:6379/0 is down', 'redis://localhost:6379/0 is down'),
     ],
 )

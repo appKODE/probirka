@@ -34,7 +34,7 @@ def test_defaults_are_soft() -> None:
     assert policy.blocked_networks == ()
     assert policy.allowed_networks == ()
     assert policy.follow_redirects is False
-    assert policy.max_redirects == 5  # noqa: PLR2004
+    assert policy.max_redirects == 5
     assert policy.needs_resolution is False
 
 

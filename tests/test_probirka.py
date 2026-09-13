@@ -3,6 +3,7 @@ import json
 from datetime import datetime, timedelta
 
 import pytest
+
 from probirka import ProbeBase, Probirka
 from tests.helpers import FailureProbe, SlowProbe
 
@@ -33,12 +34,12 @@ async def test_optional_probe() -> None:
     def _check_2() -> bool:
         return False
 
-    # Проверяем, что при запуске только опциональных проверок запускается только одна проверка
+    # running only the optional probes runs exactly one probe
     results = await checks.run(with_groups='optional', skip_required=True)
     assert len(results.checks) == 1
     assert results.checks[0].ok is False
 
-    # Проверяем, что при запуске всех проверок запускается только обязательная проверка
+    # running everything runs only the required probe
     results = await checks.run()
     assert len(results.checks) == 1
     assert results.checks[0].ok is True
@@ -55,17 +56,17 @@ async def test_probirka_caching() -> None:
         counter += 1
         return True
 
-    # Первый запуск
+    # first run
     results = await checks.run()
     assert results.checks[0].ok is True
     assert counter == 1
 
-    # Второй запуск (должен использовать кэш)
+    # second run (must hit the cache)
     results = await checks.run()
     assert results.checks[0].ok is True
     assert counter == 1
 
-    # Проверка глобальных настроек кэширования
+    # global cache settings
     checks2 = Probirka(success_ttl=1, failed_ttl=1)
     counter2 = 0
 
@@ -75,12 +76,12 @@ async def test_probirka_caching() -> None:
         counter2 += 1
         return True
 
-    # Первый запуск
+    # first run
     results = await checks2.run()
     assert results.checks[0].ok is True
     assert counter2 == 1
 
-    # Второй запуск (должен использовать кэш)
+    # second run (must hit the cache)
     results = await checks2.run()
     assert results.checks[0].ok is True
     assert counter2 == 1
@@ -363,7 +364,7 @@ def test_allow_failure_without_groups_raises() -> None:
 
     with pytest.raises(ValueError, match='allow_failure applies to groups'):
         checks.add_probes(FailureProbe(), allow_failure=True)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='allow_failure applies to groups'):
         checks.add_probes(FailureProbe(), allow_failure=False)
     assert not checks._required_probes
 

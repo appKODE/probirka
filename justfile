@@ -1,23 +1,24 @@
 SOURCE_PATH := "probirka"
 TESTS_PATH := "tests"
+LINT_PATHS := SOURCE_PATH + " " + TESTS_PATH + " docs"
 
 upgrade:
     uv lock --upgrade
 
 fmt:
-    uv run ruff format {{ SOURCE_PATH }}
+    uv run ruff format {{ LINT_PATHS }}
 
 fmt-check:
-    uv run ruff format --check {{ SOURCE_PATH }}
+    uv run ruff format --check {{ LINT_PATHS }}
 
 lint:
-    uv run ruff check {{ SOURCE_PATH }}
+    uv run ruff check {{ LINT_PATHS }}
 
 ty:
     uv run ty check {{ SOURCE_PATH }}
 
 fix:
-    uv run ruff check --fix --unsafe-fixes {{ SOURCE_PATH }}
+    uv run ruff check --fix --unsafe-fixes {{ LINT_PATHS }}
 
 tests:
     uv run pytest --cov=probirka --cov-report lcov:tests.lcov tests/

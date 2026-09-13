@@ -11,9 +11,9 @@ from probirka import PostgresAsyncpgProbe
 
 
 def test_requires_client_or_dsn() -> None:
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='is required'):
         PostgresAsyncpgProbe()
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='mutually exclusive'):
         PostgresAsyncpgProbe(client=MagicMock(), dsn='postgresql://x')
 
 
@@ -113,4 +113,7 @@ async def test_dsn_password_is_masked_in_error(monkeypatch: pytest.MonkeyPatch) 
     result = await PostgresAsyncpgProbe(dsn=dsn).run_check()
 
     assert result.ok is False
-    assert result.error == 'InvalidPasswordError: password authentication failed for postgresql://app:***@localhost/db with "***"'
+    assert (
+        result.error
+        == 'InvalidPasswordError: password authentication failed for postgresql://app:***@localhost/db with "***"'
+    )

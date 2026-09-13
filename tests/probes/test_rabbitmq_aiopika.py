@@ -20,9 +20,9 @@ def make_connection(is_closed: bool = False) -> MagicMock:
 
 
 def test_requires_client_or_url() -> None:
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='is required'):
         RabbitmqAiopikaProbe()
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='mutually exclusive'):
         RabbitmqAiopikaProbe(client=MagicMock(), url='amqp://x')
 
 

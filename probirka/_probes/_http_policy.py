@@ -18,7 +18,7 @@ from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network, ip_add
 from typing import TypeAlias, cast
 from urllib.parse import SplitResult, urlsplit
 
-from probirka._probes._common import ProbeFailure
+from probirka._probe import ProbeFailure
 from probirka._redact import mask_url
 
 IPAddress: TypeAlias = IPv4Address | IPv6Address
@@ -59,7 +59,8 @@ def _parse_networks(values: Collection[str | IPNetwork], name: str) -> tuple[IPN
         try:
             networks.append(ip_network(value, strict=False))
         except ValueError as exc:
-            raise ValueError(f'{name}: invalid network {value!r}') from exc
+            msg = f'{name}: invalid network {value!r}'
+            raise ValueError(msg) from exc
     return tuple(networks)
 
 
@@ -141,14 +142,16 @@ class HttpProbePolicy:
     def __post_init__(self) -> None:
         schemes = frozenset(scheme.lower() for scheme in self.allowed_schemes)
         if not schemes:
-            raise ValueError('allowed_schemes must not be empty')
+            msg = 'allowed_schemes must not be empty'
+            raise ValueError(msg)
         object.__setattr__(self, 'allowed_schemes', schemes)
         if self.allowed_hosts is not None:
             object.__setattr__(self, 'allowed_hosts', frozenset(normalize_host(host) for host in self.allowed_hosts))
         object.__setattr__(self, 'blocked_networks', _parse_networks(self.blocked_networks, 'blocked_networks'))
         object.__setattr__(self, 'allowed_networks', _parse_networks(self.allowed_networks, 'allowed_networks'))
         if self.max_redirects < 0:
-            raise ValueError('max_redirects must be >= 0')
+            msg = 'max_redirects must be >= 0'
+            raise ValueError(msg)
 
     @property
     def needs_resolution(self) -> bool:
@@ -167,14 +170,18 @@ class HttpProbePolicy:
             parts = urlsplit(url)
             parts.port  # noqa: B018 -- raises ValueError for a non-numeric or out-of-range port
         except ValueError as exc:
-            raise HttpProbePolicyViolation(f'malformed URL {mask_url(url)}: {exc}') from None
+            msg = f'malformed URL {mask_url(url)}: {exc}'
+            raise HttpProbePolicyViolation(msg) from None
         if parts.scheme.lower() not in self.allowed_schemes:
-            raise HttpProbePolicyViolation(f'scheme {parts.scheme!r} is not allowed')
+            msg = f'scheme {parts.scheme!r} is not allowed'
+            raise HttpProbePolicyViolation(msg)
         if not parts.hostname:
-            raise HttpProbePolicyViolation(f'URL {mask_url(url)} has no host')
+            msg = f'URL {mask_url(url)} has no host'
+            raise HttpProbePolicyViolation(msg)
         host = normalize_host(parts.hostname)
         if self.allowed_hosts is not None and not self._host_allowed(host):
-            raise HttpProbePolicyViolation(f'host {host!r} is not in allowed_hosts')
+            msg = f'host {host!r} is not in allowed_hosts'
+            raise HttpProbePolicyViolation(msg)
         literal = _literal_ip(host)
         if literal is not None:
             self.check_address(literal)
@@ -219,8 +226,10 @@ class HttpProbePolicy:
         if reason is None:
             return
         if host is None:
-            raise HttpProbePolicyViolation(f'address {address} {reason}')
-        raise HttpProbePolicyViolation(f'{host} resolves to {address}, which {reason}')
+            msg = f'address {address} {reason}'
+            raise HttpProbePolicyViolation(msg)
+        msg = f'{host} resolves to {address}, which {reason}'
+        raise HttpProbePolicyViolation(msg)
 
     async def check_resolution(self, parts: SplitResult) -> None:
         """

@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from datetime import timedelta
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from probirka._probes._client_base import ClientProbeBase
 from probirka._probes._common import ClientOrFactory, require_exactly_one
 from probirka._redact import secrets_from_url
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+    from datetime import timedelta
 
 
 class MongoProbeBase(ClientProbeBase):
@@ -65,7 +67,7 @@ class MongoProbeBase(ClientProbeBase):
 
     @asynccontextmanager
     async def _temporary_client(self) -> AsyncIterator[Any]:
-        assert self._url is not None
+        assert self._url is not None  # noqa: S101 -- narrowed by require_exactly_one in __init__
         kwargs: dict[str, Any] = {}
         if self._timeout is not None:
             kwargs['serverSelectionTimeoutMS'] = self._timeout * 1000

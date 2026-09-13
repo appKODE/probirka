@@ -126,7 +126,7 @@ A failing check therefore looks like this:
             'error': 'TimeoutError: probe timed out after 2s',
             'allow_failure': False,
         },
-        ...
+        ...,
     ],
     'error': None,
 }
@@ -398,8 +398,7 @@ Every probe can have its own timeout:
     name='database',
     timeout=2,
 )
-async def check_database():
-    ...
+async def check_database(): ...
 ```
 
 There is also an overall timeout for the complete run:
@@ -568,6 +567,8 @@ just lint
 just ty
 just doc
 ```
+
+`just lint` and `just fmt` cover `probirka`, `tests` and `docs`. The architecture boundaries, the rule that `__init__.py` files only re-export, and the commit and merge request conventions are in [AGENTS.md](AGENTS.md).
 
 Integration tests run the ready-made probes against real services in Docker. They are skipped unless `PROBIRKA_INTEGRATION=1` is set, so `just tests` needs no Docker:
 

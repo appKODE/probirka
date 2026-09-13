@@ -1,20 +1,18 @@
-import pytest
-
 pytest_plugins = ('pytest_asyncio',)
 
-from typing import Callable, Optional, Union
+from collections.abc import Callable
 from unittest.mock import MagicMock
 
-from pytest import fixture
+import pytest
 
 from probirka import Probe, ProbeBase
 
 
-@fixture
-def make_testing_probe() -> Callable[[Union[MagicMock, Optional[bool]]], Probe]:
-    def _inner(probe_result: Union[MagicMock, Optional[bool]]) -> Probe:
+@pytest.fixture
+def make_testing_probe() -> Callable[[MagicMock | bool | None], Probe]:
+    def _inner(probe_result: MagicMock | bool | None) -> Probe:
         class _Probe(ProbeBase):
-            async def _check(self) -> Optional[bool]:
+            async def _check(self) -> bool | None:
                 if isinstance(probe_result, MagicMock):
                     return probe_result()
                 return probe_result
