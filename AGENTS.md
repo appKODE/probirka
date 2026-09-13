@@ -93,7 +93,7 @@ core never imports `_probes` or `_ext`; nothing inside the package imports the r
   whole surface while the barrel imports nothing at runtime. Statically `probirka._probes.RedisProbe`
   looks present; at runtime it is not, and nothing reaches for it there.
 - The package root imports only its direct children: the flat modules (`_lazy`, `_redact`,
-  `_results`, `_probirka`) by name and the subpackages through their barrels, never
+  `_results`, `_probe`, `_probirka`) by name and the subpackages through their barrels, never
   `probirka._probes._<module>`. The lazy names come from the barrels under `TYPE_CHECKING` as
   well; their runtime path is the `LAZY` registry.
 - The package root additionally binds the PEP 562 hooks by assignment
