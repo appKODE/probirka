@@ -19,14 +19,14 @@ but are imported only when used.
 | `probirka/_redact.py` | Secret masking, stdlib only |
 | `probirka/_results.py` | `ProbeResult`, `ProbirkaResult` |
 | `probirka/_probirka.py` | `Probirka`: registration, groups, concurrency, timeouts |
-| `probirka/_probes/__init__.py` | Barrel of the dependency-free probe names |
+| `probirka/_probes/__init__.py` | Barrel: dependency-free probe names in `__all__`, the others under `TYPE_CHECKING` |
 | `probirka/_probes/_base.py` | `Probe` protocol, `ProbeBase`, `CallableProbe` |
 | `probirka/_probes/_common.py` | `ProbeFailure`, `ClientOrFactory`, constructor helpers |
 | `probirka/_probes/_client_base.py`, `_http_base.py`, `_mongo_base.py` | Base classes shared by the driver probes |
 | `probirka/_probes/_http_policy.py` | `HttpProbePolicy`, the SSRF protection of the HTTP probes, stdlib only |
 | `probirka/_probes/_tcp.py` | `TcpProbe`, the one ready-made probe without a client library |
 | `probirka/_probes/_<library>.py` | One driver probe per client library; imports the library at module level |
-| `probirka/_ext/__init__.py` | Barrel of the dependency-free adapter names |
+| `probirka/_ext/__init__.py` | Barrel: `make_asgi_app` in `__all__`, the framework adapters under `TYPE_CHECKING` |
 | `probirka/_ext/_common.py` | "Run the probes, render the body", shared by the adapters |
 | `probirka/_ext/asgi.py` | `make_asgi_app`, needs no framework |
 | `probirka/_ext/<framework>.py` | One adapter per framework; imports the framework at module level |
@@ -77,8 +77,14 @@ nothing inside the package imports the root `probirka`; `_probes/*` never import
   (`from probirka._probes._base import ProbeBase`), never through the subpackage `__init__`. A
   barrel imported by its own members is a circular import waiting to happen. Only the package
   root and the tests consume barrels.
-- A subpackage `__init__` re-exports its dependency-free names only; driver modules are never
-  re-exported.
+- A subpackage `__init__` re-exports its dependency-free names in `__all__`. The names that need a
+  third-party package appear there only inside a `TYPE_CHECKING` block, so type checkers see the
+  whole surface while the barrel imports nothing at runtime. Statically `probirka._probes.RedisProbe`
+  looks present; at runtime it is not, and nothing reaches for it there.
+- The package root imports only its direct children: the flat modules (`_lazy`, `_redact`,
+  `_results`, `_probirka`) by name and the subpackages through their barrels, never
+  `probirka._probes._<module>`. The lazy names come from the barrels under `TYPE_CHECKING` as
+  well; their runtime path is the `LAZY` registry.
 - The package root additionally binds the PEP 562 hooks by assignment
   (`__getattr__ = _module_getattr`, `__dir__ = _module_dir`) and appends the installed lazy names
   to `__all__`. That is the whole exception.
@@ -99,8 +105,9 @@ nothing inside the package imports the root `probirka`; `_probes/*` never import
 1. Create `probirka/_probes/_<library>.py` extending `ClientProbeBase` (or `HttpProbeBase`,
    `MongoProbeBase`), or `probirka/_ext/<framework>.py` built on `run_and_render` from
    `_ext/_common.py`. Import the library at module level in that file only.
-2. Add the name to `LAZY` in `probirka/_lazy.py` (module path, import name, pip package) and a
-   `TYPE_CHECKING` import to `probirka/__init__.py`.
+2. Add the name to `LAZY` in `probirka/_lazy.py` (module path, import name, pip package), a
+   `TYPE_CHECKING` re-export to the subpackage barrel (`probirka/_probes/__init__.py` or
+   `probirka/_ext/__init__.py`) and one more, from that barrel, to `probirka/__init__.py`.
 3. Add the library to the `dev` dependency group in `pyproject.toml`.
 4. Unit tests with the client mocked in `tests/probes/`; an integration test in
    `tests/integration/` plus the service in `tests/integration/compose.yaml` and in the

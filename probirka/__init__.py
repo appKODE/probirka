@@ -30,18 +30,18 @@ from probirka._redact import MASK, mask_url, redact_value
 from probirka._results import ProbeResult, ProbirkaResult
 
 if TYPE_CHECKING:
-    from probirka._ext.aiohttp import make_aiohttp_endpoint as make_aiohttp_endpoint
-    from probirka._ext.django import make_django_view as make_django_view
-    from probirka._ext.fastapi import make_fastapi_endpoint as make_fastapi_endpoint
-    from probirka._probes._http_aiohttp import HttpAiohttpProbe as HttpAiohttpProbe
-    from probirka._probes._http_httpx import HttpHttpxProbe as HttpHttpxProbe
-    from probirka._probes._http_httpx2 import HttpHttpx2Probe as HttpHttpx2Probe
-    from probirka._probes._kafka_aiokafka import KafkaAiokafkaProbe as KafkaAiokafkaProbe
-    from probirka._probes._mongo_motor import MongoMotorProbe as MongoMotorProbe
-    from probirka._probes._mongo_pymongo import MongoPymongoProbe as MongoPymongoProbe
-    from probirka._probes._postgres_asyncpg import PostgresAsyncpgProbe as PostgresAsyncpgProbe
-    from probirka._probes._rabbitmq_aiopika import RabbitmqAiopikaProbe as RabbitmqAiopikaProbe
-    from probirka._probes._redis import RedisProbe as RedisProbe
+    from probirka._ext import make_aiohttp_endpoint as make_aiohttp_endpoint
+    from probirka._ext import make_django_view as make_django_view
+    from probirka._ext import make_fastapi_endpoint as make_fastapi_endpoint
+    from probirka._probes import HttpAiohttpProbe as HttpAiohttpProbe
+    from probirka._probes import HttpHttpx2Probe as HttpHttpx2Probe
+    from probirka._probes import HttpHttpxProbe as HttpHttpxProbe
+    from probirka._probes import KafkaAiokafkaProbe as KafkaAiokafkaProbe
+    from probirka._probes import MongoMotorProbe as MongoMotorProbe
+    from probirka._probes import MongoPymongoProbe as MongoPymongoProbe
+    from probirka._probes import PostgresAsyncpgProbe as PostgresAsyncpgProbe
+    from probirka._probes import RabbitmqAiopikaProbe as RabbitmqAiopikaProbe
+    from probirka._probes import RedisProbe as RedisProbe
 
 __title__ = 'probirka'
 __version__ = '0.0.0'

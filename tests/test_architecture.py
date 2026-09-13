@@ -67,6 +67,8 @@ def test_imports_are_concrete_and_layered(path: Path) -> None:
     imports = package_imports(path)
     for imported in imports:
         assert imported != 'probirka', f'{name} imports the package root'
+        if name == 'probirka':
+            assert imported.count('.') == 1, f'the root reaches into {imported}; import it through its package'
         if own_package != 'probirka':
             assert imported != own_package, f'{name} imports its own package instead of a sibling module'
     forbidden = [pkg for layer, pkgs in FORBIDDEN.items() if is_in(name, layer) for pkg in pkgs]
